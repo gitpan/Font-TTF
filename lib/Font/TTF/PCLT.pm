@@ -70,7 +70,7 @@ sub read
     $self->SUPER::read || return $self;
 
     init unless defined $fields{'xHeight'};
-    read($self->{' INFILE'}, $dat, 54);
+    $self->{' INFILE'}->read($dat, 54);
 
     TTF_Read_Fields($self, $dat, \%fields);
     $self;
@@ -88,7 +88,7 @@ sub out
     my ($self, $fh) = @_;
 
     return $self->SUPER::out($fh) unless $self->{' read'};
-    print $fh TTF_Out_Fields($self, \%fields, 54);
+    $fh->print(TTF_Out_Fields($self, \%fields, 54));
 }
 
 1;

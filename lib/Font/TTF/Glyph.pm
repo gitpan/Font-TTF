@@ -216,8 +216,8 @@ sub read
 
     return $self if $self->{' read'};
     $self->{' read'} = 1;
-    seek($fh, $self->{'LOC'} + $self->{'BASE'}, 0);
-    read($fh, $self->{'DAT'}, $self->{'LEN'});
+    $fh->seek($self->{'LOC'} + $self->{'BASE'}, 0);
+    $fh->read($self->{'DAT'}, $self->{'LEN'});
     TTF_Read_Fields($self, $self->{'DAT'}, \%fields);
     $self;
 }
@@ -365,7 +365,7 @@ sub out
 
     $self->read unless $self->{' read'};
     $self->update if $self->{' isDirty'};
-    print $fh $self->{'DAT'};
+    $fh->print($self->{'DAT'});
     $self->{'OUTLEN'} = length($self->{'DAT'});
     $self;
 }

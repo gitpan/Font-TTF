@@ -91,7 +91,7 @@ sub read
 
     return $self->read_dat if (ref($self) eq qq/__PACKAGE__/);
     return undef if $self->{' read'};
-    seek ($self->{' INFILE'}, $self->{' OFFSET'}, 0);
+    $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
     $self->{' read'} = 1;
     $self;
 }
@@ -112,8 +112,8 @@ sub read_dat
 # $self->read_dat are going to permanently loop
     return undef if ($self->{' read'});
     $self->{' read'} = 1;
-    seek($self->{' INFILE'}, $self->{' OFFSET'}, 0);
-    read($self->{' INFILE'}, $self->{' dat'}, $self->{' LENGTH'});
+    $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
+    $self->{' INFILE'}->read($self->{' dat'}, $self->{' LENGTH'});
     $self;
 }
 
@@ -132,18 +132,18 @@ sub out
 
     if (defined $self->{' dat'})
     {
-        print $fh $self->{' dat'};
+        $fh->print($self->{' dat'});
         return $self;
     }
 
     return undef unless defined $self->{' INFILE'};
-    seek ($self->{' INFILE'}, $self->{' OFFSET'}, 0);
+    $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
     $len = $self->{' LENGTH'};
     while ($len > 0)
     {
         $count = ($len > 4096) ? 4096 : $len;
-        read ($self->{' INFILE'}, $dat, $count);
-        print $fh $dat;
+        $self->{' INFILE'}->read($dat, $count);
+        $fh->print($dat);
         $len -= $count;
     }
     $self;

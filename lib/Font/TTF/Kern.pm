@@ -115,18 +115,18 @@ sub read
 
     $self->SUPER::read or return $self;
 
-    read($fh, $dat, 4);
+    $fh->read($dat, 4);
     ($self->{'Version'}, $numt) = unpack("n2", $dat);
     $self->{'Num'} = $numt;
 
     for ($i = 0; $i < $numt; $i++)
     {
         $t = {};
-        read($fh, $dat, 6);
+        $fh->read($dat, 6);
         ($t->{'Version'}, $len, $cov) = unpack("n3", $dat);
         $t->{'coverage'} = $cov & 255;
         $t->{'type'} = $cov >> 8;
-        read($fh, $dat, $len - 6);
+        $fh->read($dat, $len - 6);
         if ($t->{'Version'} == 0)
         {
             my ($j);
@@ -190,13 +190,13 @@ sub out
 
     return $self->SUPER::out($fh) unless ($self->{' read'});
 
-    print $fh pack("n2", $self->{'Version'}, $self->{'Num'});
+    $fh->print(pack("n2", $self->{'Version'}, $self->{'Num'}));
     for ($i = 0; $i < $self->{'Num'}; $i++)
     {
         $t = $self->{'tables'}[$i];
-        $loc = tell($fh);
+        $loc = $fh->tell();
 
-        print $fh pack("nnn", $t->{'Version'}, 0, $t->{'coverage'});
+        $fh->print(pack("nnn", $t->{'Version'}, 0, $t->{'coverage'}));
         if ($t->{'Version'} == 0)
         {
             my ($dat);
@@ -205,22 +205,22 @@ sub out
                 foreach $r (sort {$a <=> $b} keys %{$t->{'kern'}{$l}})
                 { $dat .= TTF_Pack("SSs", $l, $r, $t->{'kern'}{$l}{$r}); }
             }
-            print $fh TTF_Pack("SSSS", Font::TTF::Utils::TTF_bininfo(length($dat) / 6, 6));
-            print $fh $dat;
+            $fh->print(TTF_Pack("SSSS", Font::TTF::Utils::TTF_bininfo(length($dat) / 6, 6)));
+            $fh->print($dat);
         } elsif ($t->{'Version'} == 2)
         {
             my ($arr);
 
-            print $fh pack("nnnn", $t->{'right_max'} << 1, 8, ($#{$t->{'left'}} + 7) << 1,
-                    ($#{$t->{'left'}} + $#{$t->{'right'}} + 10) << 1);
+            $fh->print(pack("nnnn", $t->{'right_max'} << 1, 8, ($#{$t->{'left'}} + 7) << 1,
+                    ($#{$t->{'left'}} + $#{$t->{'right'}} + 10) << 1));
 
-            print $fh pack("nn", $t->{'left_first'}, $#{$t->{'left'}} + 1);
+            $fh->print(pack("nn", $t->{'left_first'}, $#{$t->{'left'}} + 1));
             foreach (@{$t->{'left'}})
-            { print $fh pack("C", $_ * (($t->{'left_max'} + 1) << 1)); }
+            { $fh->print(pack("C", $_ * (($t->{'left_max'} + 1) << 1))); }
 
-            print $fh pack("nn", $t->{'right_first'}, $#{$t->{'right'}} + 1);
+            $fh->print(pack("nn", $t->{'right_first'}, $#{$t->{'right'}} + 1));
             foreach (@{$t->{'right'}})
-            { print $fh pack("C", $_ << 1); }
+            { $fh->print(pack("C", $_ << 1)); }
 
             $arr = "\000\000" x (($t->{'left_max'} + 1) * ($t->{'right_max'} + 1));
             foreach $l (keys %{$t->{'kern'}})
@@ -229,12 +229,12 @@ sub out
                 { substr($arr, ($l * ($t->{'left_max'} + 1) + $r) << 1, 2)
                         = pack("n", $t->{'kern'}{$l}{$r}); }
             }
-            print $fh $arr;
+            $fh->print($arr);
         }
-        $loc1 = tell($fh);
-        seek($fh, $loc + 2, 0);
-        print $fh pack("n", $loc1 - $loc);
-        seek($fh, $loc1, 0);
+        $loc1 = $fh->tell();
+        $fh->seek($loc + 2, 0);
+        $fh->print(pack("n", $loc1 - $loc));
+        $fh->seek($loc1, 0);
     }
     $self;
 }

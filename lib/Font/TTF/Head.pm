@@ -73,7 +73,7 @@ sub read
     $self->SUPER::read || return $self;
 
     init unless defined $fields{'Ascender'};
-    read($self->{' INFILE'}, $dat, 54);
+    $self->{' INFILE'}->read($dat, 54);
 
     TTF_Read_Fields($self, $dat, \%fields);
     $self;
@@ -94,7 +94,7 @@ sub out
 
     return $self->SUPER::out($fh) unless $self->{' read'};      # this is never true
     $self->{'checkSumAdjustment'} = 0;
-    print $fh TTF_Out_Fields($self, \%fields, 54);
+    $fh->print(TTF_Out_Fields($self, \%fields, 54));
     $self;
 }
 

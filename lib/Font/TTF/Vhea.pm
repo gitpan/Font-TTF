@@ -61,7 +61,7 @@ sub read
 
     $self->SUPER::read or return $self;
     init unless defined $fields{'Ascender'};
-    read($self->{' INFILE'}, $dat, 36);
+    $self->{' INFILE'}->read($dat, 36);
 
     TTF_Read_Fields($self, $dat, \%fields);
     $self;
@@ -81,7 +81,7 @@ sub out
     return $self->SUPER::out($fh) unless $self->{' read'};
 
     $self->{'numberOfVMetrics'} = $self->{' PARENT'}{'vmtx'}->numMetrics || $self->{'numberOfVMetrics'};
-    print $fh TTF_Out_Fields($self, \%fields, 36);
+    $fh->print(TTF_Out_Fields($self, \%fields, 36));
     $self;
 }
 

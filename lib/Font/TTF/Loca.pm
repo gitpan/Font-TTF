@@ -63,11 +63,11 @@ sub read
     my ($dat, $last, $i, $loc);
 
     $self->SUPER::read or return $self;
-    read($fh, $dat, $locFmt ? 4 : 2);
+    $fh->read($dat, $locFmt ? 4 : 2);
     $last = unpack($locFmt ? "N" : "n", $dat);
     for ($i = 0; $i < $numGlyphs; $i++)
     {
-        read($fh, $dat, $locFmt ? 4 : 2);
+        $fh->read($dat, $locFmt ? 4 : 2);
         $loc = unpack($locFmt ? "N" : "n", $dat);
         $self->{'glyphs'}[$i] = ($self->{'glyphtype'} || "Font::TTF::Glyph")->new(
                 LOC => $last << ($locFmt ? 0 : 1),
@@ -114,14 +114,14 @@ sub out
         } else
         {
             if ($locFmt)
-            { print $fh pack("N", $g->{'OUTLOC'}) x ($count + 1); }
+            { $fh->print(pack("N", $g->{'OUTLOC'}) x ($count + 1)); }
             else
-            { print $fh pack("n", $g->{'OUTLOC'} >> 1) x ($count + 1); }
+            { $fh->print(pack("n", $g->{'OUTLOC'} >> 1) x ($count + 1)); }
             $count = 0;
             $offset = $g->{'OUTLOC'} + $g->{'OUTLEN'};
         }
     }
-    print $fh pack($locFmt ? "N" : "n", ($locFmt ? $offset: $offset >> 1)) x ($count + 1);
+    $fh->print(pack($locFmt ? "N" : "n", ($locFmt ? $offset: $offset >> 1)) x ($count + 1));
 }
 
 

@@ -69,16 +69,16 @@ sub read
     $self->SUPER::read or return $self;
 
     init unless defined $fields{'numGlyphs'};    # any key would do
-    read($self->{' INFILE'}, $dat, 4);
+    $self->{' INFILE'}->read($dat, 4);
     $self->{'version'} = TTF_Unpack("f", $dat);
 
     if ($self->{'version'} == 0.5)
     {
-        read($self->{' INFILE'}, $dat, 2);
+        $self->{' INFILE'}->read($dat, 2);
         $self->{'numGlyphs'} = unpack("n", $dat);
     } else
     {
-        read($self->{' INFILE'}, $dat, 28);
+        $self->{' INFILE'}->read($dat, 28);
         TTF_Read_Fields($self, $dat, \%fields);
     }
     $self;
@@ -96,12 +96,12 @@ sub out
     my ($self, $fh) = @_;
 
     return $self->SUPER::out($fh) unless $self->{' read'};
-    print $fh TTF_Pack("f", $self->{'version'});
+    $fh->print(TTF_Pack("f", $self->{'version'}));
     
     if ($self->{'version'} == 0.5)
-    { print $fh pack("n", $self->{'numGlyphs'}); }
+    { $fh->print(pack("n", $self->{'numGlyphs'})); }
     else
-    { print $fh TTF_Out_Fields($self, \%fields, 28); }
+    { $fh->print(TTF_Out_Fields($self, \%fields, 28)); }
     $self;
 }
 

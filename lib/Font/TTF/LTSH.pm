@@ -42,11 +42,11 @@ sub read
 
     $self->SUPER::read or return $self;
 
-    read($fh, $dat, 4);
+    $fh->read($dat, 4);
     ($self->{'Version'}, $numg) = unpack("nn", $dat);
     $self->{'Num'} = $numg;
 
-    read($fh, $dat, $numg);
+    $fh->read($dat, $numg);
     $self->{'glyphs'} = [unpack("C$numg", $dat)];
     $self;
 }
@@ -65,8 +65,8 @@ sub out
 
     return $self->SUPER::out($fh) unless ($self->{' read'});
 
-    print $fh pack("nn", 0, $numg);
-    print $fh pack("C$numg", @{$self->{'glyphs'}});
+    $fh->print(pack("nn", 0, $numg));
+    $fh->print(pack("C$numg", @{$self->{'glyphs'}}));
     $self;
 }
     

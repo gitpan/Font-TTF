@@ -65,7 +65,7 @@ sub _read
 
     for ($i = 0; $i < $numh; $i++)
     {
-        read($fh, $dat, 4);
+        $fh->read($dat, 4);
         ($self->{$tAdv}[$i], $self->{$tLsb}[$i]) = unpack("nn", $dat);
         $self->{$tLsb}[$i] -= 65536 if ($self->{$tLsb}[$i] >= 32768);
     }
@@ -73,7 +73,7 @@ sub _read
     $i--;
     while ($i++ < $numg)
     {
-        read($fh, $dat, 2);
+        $fh->read($dat, 2);
         $self->{$tAdv}[$i] = $self->{$tAdv}[$numh - 1];
         $self->{$tLsb}[$i] = unpack("n", $dat);
         $self->{$tLsb}[$i] -= 65536 if ($self->{$tLsb}[$i] >= 32768);
@@ -130,9 +130,9 @@ sub _out
         $lsb = $self->{$tLsb}[$i];
         $lsb += 65536 if $lsb < 0;
         if ($i >= $numh)
-        { print $fh pack("n", $lsb); }
+        { $fh->print(pack("n", $lsb)); }
         else
-        { print $fh pack("n2", $self->{$tAdv}[$i], $lsb); }
+        { $fh->print(pack("n2", $self->{$tAdv}[$i], $lsb)); }
     }
     $self;
 }

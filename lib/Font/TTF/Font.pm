@@ -90,11 +90,17 @@ font directory, thus providing support for TrueType Collections.
 
 =cut
 
+use IO::File;
+
 use strict;
 use vars qw(%tables $VERSION);
 use Symbol();
 
-$VERSION = 0.08;    # MJPH      19-MAY-1999     Sort out line endings for Unix
+require 5.004;
+
+$VERSION = 0.10;    # MJPH      21-JUN-1999     Use IO::File
+# $VERSION = 0.09;    # MJPH       9-JUN-1999     Add 5.004 require, minor tweeks in cmap
+# $VERSION = 0.08;    # MJPH      19-MAY-1999     Sort out line endings for Unix
 # $VERSION = 0.07;    # MJPH      28-APR-1999     Get the regression tests to work
 # $VERSION = 0.06;    # MJPH      26-APR-1999     Start to add to CVS, correct MANIFEST.SKIP
 # $VERSION = 0.05;    # MJPH      13-APR-1999     See changes for 0.05
@@ -196,12 +202,16 @@ objects for each table in the font.
 sub open
 {
     my ($class, $fname) = @_;
-
+    my ($fh);
     my ($self) = {};
-    my ($fh) = Symbol->gensym();
+    
+    unless (ref($fname))
+    {
+        $fh = IO::File->new($fname) or return undef;
+        binmode $fh;
+    } else
+    { $fh = $fname; }
 
-    open($fh, $fname) or return undef;
-    binmode $fh;
     $self->{' INFILE'} = $fh;
     $self->{' fname'} = $fname;
     $self->{' OFFSET'} = 0;
@@ -224,20 +234,23 @@ sub read
     my ($fh) = $self->{' INFILE'};
     my ($dat, $i, $ver, $dir_num, $type, $name, $check, $off, $len, $t);
 
-    seek($fh, $self->{' OFFSET'}, 0);
-    read($fh, $dat, 12);
+    $fh->seek($self->{' OFFSET'}, 0);
+    $fh->read($dat, 12);
     ($ver, $dir_num) = unpack("Nn", $dat);
     $ver == 1 << 16 or return undef;
     
     for ($i = 0; $i < $dir_num; $i++)
     {
-        read($fh, $dat, 16) || die "Reading table entry";
+        $fh->read($dat, 16) || die "Reading table entry";
         ($name, $check, $off, $len) = unpack("a4NNN", $dat);
         $self->{$name} = $self->{' PARENT'}->find($self, $name, $check, $off, $len) && next
                 if (defined $self->{' PARENT'});
         $type = $tables{$name} || 'Font::TTF::Table';
         $t = $type;
-        $t =~ s|::|/|oig;
+        if ($^O eq "MacOS")
+        { $t =~ s/^|::/:/oig; }
+        else
+        { $t =~ s|::|/|oig; }
         require "$t.pm";
         $self->{$name} = $type->new(PARENT  => $self,
                                     NAME    => $name,
@@ -273,13 +286,18 @@ All output files must include the C<head> table.
 sub out
 {
     my ($self, $fname, @tlist) = @_;
-    my ($fh) = Symbol->gensym();
+    my ($fh);
     my ($dat, $numTables, $sRange, $eSel);
     my (%dir, $k, $mloc, $count);
     my ($csum, $lsum, $msum, $loc, $oldloc, $len, $shift);
 
-    open($fh, "+>$fname") || return warn "Unable to open $fname";
-    binmode $fh;
+    unless (ref($fname))
+    {
+        $fh = IO::File->new("+>$fname") || return warn "Unable to open $fname";
+        binmode $fh;
+    } else
+    { $fh = $fname; }
+    
     $self->{' oname'} = $fname;
     $self->{' outfile'} = $fh;
 
@@ -296,20 +314,20 @@ sub out
 
     ($numTables, $sRange, $eSel, $shift) = Font::TTF::Utils::TTF_bininfo($#tlist + 1, 16);
     $dat = pack("Nnnnn", 1 << 16, $numTables, $sRange, $eSel, $shift);
-    print $fh $dat;
+    $fh->print($dat);
     $msum = unpack("%32N*", $dat);
 
 # reserve place holders for each directory entry
     foreach $k (@tlist)
     {
         $dir{$k} = pack("A4NNN", $k, 0, 0, 0);
-        print $fh $dir{$k};
+        $fh->print($dir{$k});
     }
 
-    $loc = tell($fh);
+    $loc = $fh->tell();
     if ($loc & 3)
     {
-        print $fh substr("\000" x 4, $loc & 3);
+        $fh->print(substr("\000" x 4, $loc & 3));
         $loc += 4 - ($loc & 3);
     }
 
@@ -317,19 +335,19 @@ sub out
     {
         $oldloc = $loc;
         $self->{$k}->out($fh);
-        $loc = tell($fh);
+        $loc = $fh->tell();
         $len = $loc - $oldloc;
         if ($loc & 3)
         {
-            print $fh substr("\000" x 4, $loc & 3);
+            $fh->print(substr("\000" x 4, $loc & 3));
             $loc += 4 - ($loc & 3);
         }
-        seek($fh, $oldloc, 0);
+        $fh->seek($oldloc, 0);
         $csum = 0; $mloc = $loc;
         while ($mloc > $oldloc)
         {
             $count = ($mloc - $oldloc > 4096) ? 4096 : $mloc - $oldloc;
-            read ($fh, $dat, $count);
+            $fh->read($dat, $count);
             $csum += unpack("%32N*", $dat);
 # this line ensures $csum stays within 32 bit bounds, clipping as necessary
             if ($csum > 0xffffffff) { $csum -= 0xffffffff; $csum--; }
@@ -338,7 +356,7 @@ sub out
         $dir{$k} = pack("A4NNN", $k, $csum, $oldloc, $len);
         $msum += $csum + unpack("%32N*", $dir{$k});
         if ($msum > 0xffffffff) { $msum -= 0xffffffff; $msum--; }
-        seek($fh, $loc, 0);
+        $fh->seek($loc, 0);
     }
 
     unless ($self->{' nocsum'})             # assuming we want a file checksum
@@ -346,12 +364,12 @@ sub out
 # Now we need to sort out the head table's checksum
         if (!defined $dir{'head'})
         {                                   # you have to have a head table
-            close($fh);
+            $fh->close();
             return warn "No 'head' table to output in $fname";
         }
         ($csum, $loc, $len) = unpack("x4NNN", $dir{'head'});
-        seek($fh, $loc + 8, 0);
-        read($fh, $dat, 4);
+        $fh->seek($loc + 8, 0);
+        $fh->read($dat, 4);
         $lsum = unpack("N", $dat);
         if ($lsum != 0)
         {
@@ -361,17 +379,17 @@ sub out
             while ($msum < 0) { $msum += 0xffffffff; $msum++; }
         }
         $lsum = 0xB1B0AFBA - $msum;
-        seek($fh, $loc + 8, 0);
-        print $fh pack("N", $lsum);
+        $fh->seek($loc + 8, 0);
+        $fh->print(pack("N", $lsum));
         $dir{'head'} = pack("A4NNN", 'head', $csum, $loc, $len);
     }
 
 # Now we can output the directory again
-    seek($fh, 12, 0);
+    $fh->seek(12, 0);
     foreach $k (@tlist)
-    { print $fh $dir{$k}; }
+    { $fh->print($dir{$k}); }
 
-    close($fh);
+    $fh->close();
     $self;
 }
 

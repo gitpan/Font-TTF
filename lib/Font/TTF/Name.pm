@@ -72,18 +72,18 @@ sub read
     my ($dat, $num, $stroff, $i, $pid, $eid, $lid, $nid, $len, $off, $here);
 
     $self->SUPER::read or return $self;
-    read($fh, $dat, 6);
+    $fh->read($dat, 6);
     ($num, $stroff) = unpack("x2nn", $dat);
     for ($i = 0; $i < $num; $i++)
     {
-        read($fh, $dat, 12);
+        $fh->read($dat, 12);
         ($pid, $eid, $lid, $nid, $len, $off) = unpack("n6", $dat);
-        $here = tell($fh);
-        seek($fh, $self->{' OFFSET'} + $stroff + $off, 0);
-        read($fh, $dat, $len);
+        $here = $fh->tell();
+        $fh->seek($self->{' OFFSET'} + $stroff + $off, 0);
+        $fh->read($dat, $len);
 # do platform specific munging here to utf8
         $self->{'strings'}[$nid][$pid][$eid]{$lid} = $dat;
-        seek($fh, $here, 0);
+        $fh->seek($here, 0);
     }
     $self;
 }
@@ -103,8 +103,8 @@ sub out
 
     return $self->SUPER::out($fh) unless $self->{' read'};
 
-    $loc = tell($fh);
-    print $fh pack("n3", 0, 0, 0);
+    $loc = $fh->tell();
+    $fh->print(pack("n3", 0, 0, 0));
     foreach $nid (0 .. $#{$self->{'strings'}})
     {
         foreach $pid (0 .. $#{$self->{'strings'}[$nid]})
@@ -127,18 +127,18 @@ sub out
     foreach $todo (@todo)
     {
         $len = length($todo->[4]);
-        print $fh pack("n6", @{$todo}[0..3], $len, $offset);
+        $fh->print(pack("n6", @{$todo}[0..3], $len, $offset));
         $offset += $len;
     }
     
-    $stroff = tell($fh) - $loc;
+    $stroff = $fh->tell() - $loc;
     foreach $todo (@todo)
-    { print $fh $todo->[4]; }
+    { $fh->print($todo->[4]); }
 
-    $endloc = tell($fh);
-    seek($fh, $loc, 0);
-    print $fh pack("n3", 0, $#todo + 1, $stroff);
-    seek($fh, $endloc, 0);
+    $endloc = $fh->tell();
+    $fh->seek($loc, 0);
+    $fh->print(pack("n3", 0, $#todo + 1, $stroff));
+    $fh->seek($endloc, 0);
     $self;
 }
 

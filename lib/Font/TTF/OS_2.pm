@@ -110,12 +110,12 @@ sub read
     $self->SUPER::read or return $self;
 
     init unless defined $fields[2]{'xAvgCharWidth'};
-    read($self->{' INFILE'}, $dat, 2);
+    $self->{' INFILE'}->read($dat, 2);
     $ver = unpack("n", $dat);
     $self->{'Version'} = $ver;
     if ($ver < 3)
     {
-        read($self->{' INFILE'}, $dat, $lens[$ver]);
+        $self->{' INFILE'}->read($dat, $lens[$ver]);
         TTF_Read_Fields($self, $dat, $fields[$ver]);
     }
     $self;
@@ -136,8 +136,8 @@ sub out
     return $self->SUPER::out($fh) unless $self->{' read'};
 
     $ver = $self->{'Version'};
-    print $fh pack("n", $ver);
-    print $fh TTF_Out_Fields($self, $fields[$ver], $lens[$ver]);
+    $fh->print(pack("n", $ver));
+    $fh->print(TTF_Out_Fields($self, $fields[$ver], $lens[$ver]));
     $self;
 }
 

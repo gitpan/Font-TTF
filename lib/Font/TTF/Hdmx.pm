@@ -51,13 +51,13 @@ sub read
     $numg = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
     $self->SUPER::read or return $self;
 
-    read($fh, $dat, 8);
+    $fh->read($dat, 8);
     ($self->{'Version'}, $numt, $len) = unpack("nnN", $dat);
     $self->{'Num'} = $numt;
 
     for ($i = 0; $i < $numt; $i++)
     {
-        read($fh, $dat, $len);
+        $fh->read($dat, $len);
         $ppem = unpack("C", $dat);
         $self->{$ppem} = [unpack("C$numg", substr($dat, 2))];
     }
@@ -82,13 +82,13 @@ sub out
     @ppem = grep(/^\d+$/, sort {$a <=> $b} keys %$self);
     $pad = "\000" x (3 - ($numg + 1) % 4);
     $len = $numg + 2 + length($pad);
-    print $fh pack("nnN", 0, $#ppem + 1, $len);
+    $fh->print(pack("nnN", 0, $#ppem + 1, $len));
     for $i (@ppem)
     {
         $max = 0;
         foreach (@{$self->{$i}}[0..($numg - 1)])
         { $max = $_ if $_ > $max; }
-        print $fh pack("C*", $i, $max, @{$self->{$i}}[0..($numg - 1)]) . $pad;
+        $fh->print(pack("C*", $i, $max, @{$self->{$i}}[0..($numg - 1)]) . $pad);
     }
     $self;
 }

@@ -112,7 +112,7 @@ sub read
     $numGlyphs = $self->{' PARENT'}{'maxp'}->read->{'numGlyphs'};
     $self->SUPER::read or return $self;
     init unless ($#base_set > 2);
-    read($fh, $dat, 32);
+    $fh->read($dat, 32);
     TTF_Read_Fields($self, $dat, \%fields);
 
     if (int($self->{'FormatType'} + .5) == 1)
@@ -124,7 +124,7 @@ sub read
         }
     } elsif (int($self->{'FormatType'} * 2 + .1) == 5)
     {
-        read($fh, $dat, $numGlyphs);
+        $fh->read($dat, $numGlyphs);
         for ($i = 0; $i < $numGlyphs; $i++)
         {
             $off = unpack("c", substr($dat, $i, 1));
@@ -135,7 +135,7 @@ sub read
     {
         my (@strings);
         
-        read($fh, $dat, ($numGlyphs + 1) << 1);
+        $fh->read($dat, ($numGlyphs + 1) << 1);
         for ($i = 0; $i < $numGlyphs; $i++)
         {
             $off = unpack("n", substr($dat, ($i + 1) << 1, 2));
@@ -143,9 +143,9 @@ sub read
         }
         for ($i = 0; $i < $maxoff - 257; $i++)
         {
-            read($fh, $dat1, 1);
+            $fh->read($dat1, 1);
             $off = unpack("C", $dat1);
-            read($fh, $dat1, $off);
+            $fh->read($dat1, $off);
             $strings[$i] = $dat1;
         }
         for ($i = 0; $i < $numGlyphs; $i++)
@@ -202,7 +202,7 @@ sub out
         }
     }
 
-    print $fh TTF_Out_Fields($self, \%fields, 32);
+    $fh->print(TTF_Out_Fields($self, \%fields, 32));
 
     return $self if (int($self->{'FormatType'} + .4) == 3);
 
@@ -210,27 +210,27 @@ sub out
     {
         my (@ind, $count);
         
-        print $fh pack("n", $num);
+        $fh->print(pack("n", $num));
         for ($i = 0; $i < $num; $i++)
         {
             if (defined $base_set{$self->{'VAL'}[$i]})
-            { print $fh pack("n", $base_set{$self->{'VAL'}[$i]}); }
+            { $fh->print(pack("n", $base_set{$self->{'VAL'}[$i]})); }
             else
             {
-                print $fh pack("n", $count + 258);
+                $fh->print(pack("n", $count + 258));
                 $ind[$count++] = $i;
             }
         }
         for ($i = 0; $i < $count; $i++)
         {
-            print $fh pack("C", length($self->{'VAL'}[$ind[$i]]));
-            print $fh $self->{'VAL'}[$ind[$i]];
+            $fh->print(pack("C", length($self->{'VAL'}[$ind[$i]])));
+            $fh->print($self->{'VAL'}[$ind[$i]]);
         }
     } elsif (int($self->{'FormatType'} * 2 + .5) == 5)
     {
         for ($i = 0; $i < $num; $i++)
-        { print $fh pack("c", defined $base_set{$self->{'VAL'}[$i]} ?
-                    $base_set{$self->{'VAL'}[$i]} - $i : -$i); }
+        { $fh->print(pack("c", defined $base_set{$self->{'VAL'}[$i]} ?
+                    $base_set{$self->{'VAL'}[$i]} - $i : -$i)); }
     }
         
     $self;

@@ -4,3 +4,20 @@
         provide scripts as .pl instead of .bat to placate Unix world
         rename makefile.pl to Makefile.PL to keep Unix happy
         Add ttfremap script
+
+* 0.06 .. 0.08
+    Fixes to get this stuff working in Unix
+
+* 0.09
+    Never released
+
+* 0.10
+** cmap
+        Make reverse return the lowest codepoint that matches rather than
+        the highest
+** font
+        Use IO::File everywhere to allow passing in of psuedo-file objects
+        rather than file names
+** Utils
+        Debug FDot2.14 conversion
+

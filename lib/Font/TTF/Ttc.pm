@@ -66,13 +66,13 @@ sub open
     my ($self) = {};
     my ($fh) = Symbol->gensym();
 
-    open($fh, "$fname") || return undef;
+    $fh->open("$fname") || return undef;
     binmode $fh;
     
     bless $self, $class;
     $self->{' INFILE'} = $fh;
     $self->{' fname'} = $fname;
-    seek($fh, 0, 0);
+    $fh->seek(0, 0);
     $self->read;
 }
 
@@ -89,11 +89,11 @@ sub read
     my ($fh) = $self->{' INFILE'};
     my ($dat, $ttc, $ver, $num, $i, $loc);
 
-    read($fh, $dat, 12);
+    $fh->read($dat, 12);
     ($ttc, $ver, $num) = unpack("A4N2", $dat);
 
     return undef unless $ttc eq "ttcf";
-    read($fh, $dat, $num << 2)
+    $fh->read($dat, $num << 2)
     for ($i = 0; $i < $num; $i++)
     {
         $loc = unpack("N", substr($dat, $i << 2, 4));       

@@ -92,13 +92,13 @@ sub read
     my ($fh) = $self->{' INFILE'};
 
     $self->SUPER::read or return $self;
-    read($fh, $dat, 4);
+    $fh->read($dat, 4);
     $self->{'Num'} = unpack("x2n", $dat);
     $self->{'Tables'} = [];
     for ($i = 0; $i < $self->{'Num'}; $i++)
     {
         $s = {};
-        read($fh, $dat, 8);
+        $fh->read($dat, 8);
         ($s->{'Platform'}, $s->{'Encoding'}, $s->{'LOC'}) = (unpack("nnN", $dat));
         $s->{'LOC'} += $self->{' OFFSET'};
         push(@{$self->{'Tables'}}, $s);
@@ -106,8 +106,8 @@ sub read
     for ($i = 0; $i < $self->{'Num'}; $i++)
     {
         $s = $self->{'Tables'}[$i];
-        seek($fh, $s->{'LOC'}, 0);
-        read($fh, $dat, 6);
+        $fh->seek($s->{'LOC'}, 0);
+        $fh->read($dat, 6);
         ($form, $len, $ver) = (unpack("n3", $dat));
 
         $s->{'Format'} = $form;
@@ -115,7 +115,7 @@ sub read
         if ($form == 0)
         {
             $s->{'val'} = Font::TTF::Segarr->new;
-            read($fh, $dat, 256);
+            $fh->read($dat, 256);
             $s->{'val'}->fastadd_segment(0, 2, unpack("C*", $dat));
             $s->{'Start'} = 0;
             $s->{'Num'} = 256;
@@ -123,9 +123,9 @@ sub read
         {
             my ($start, $ecount);
             
-            read($fh, $dat, 4);
+            $fh->read($dat, 4);
             ($start, $ecount) = unpack("n2", $dat);
-            read($fh, $dat, $ecount << 1);
+            $fh->read($dat, $ecount << 1);
             $s->{'val'} = Font::TTF::Segarr->new;
             $s->{'val'}->fastadd_segment($start, 2, unpack("n*", $dat));
             $s->{'Start'} = $start;
@@ -135,10 +135,10 @@ sub read
 # no idea what to do here yet
         } elsif ($form == 4)
         {
-            read($fh, $dat, 8);
+            $fh->read($dat, 8);
             $num = unpack("n", $dat);
             $num >>= 1;
-            read($fh, $dat, $len - 14);
+            $fh->read($dat, $len - 14);
             $s->{'val'} = Font::TTF::Segarr->new;
             for ($j = 0; $j < $num; $j++)
             {
@@ -203,15 +203,11 @@ sub find_ms
         $s = $self->{'Tables'}[$i];
         if ($s->{'Platform'} == 3)
         {
-            if ($s->{'Encoding'} == 1)
-            {
-                $self->{' mstable'} = $s;
-                last;
-            } elsif ($s->{'Encoding'} == 0)
-            { $alt = $s; }
-        }
+            $self->{' mstable'} = $s;
+            last if ($s->{'Encoding'} == 1);
+        } elsif ($s->{'Platform'} == 0 || ($s->{'Platform'} == 2 && $s->{'Encoding'} == 1))
+        { $self->{' mstable'} = $s; }
     }
-    $self->{' mstable'} = $alt unless defined $self->{' mstable'};
     $self->{' mstable'};
 }
 
@@ -230,25 +226,25 @@ sub out
 
     return $self->SUPER::out($fh) unless $self->{' read'};
 
-    $base_loc = tell($fh);
-    print $fh pack("n2", 0, $self->{'Num'});
+    $base_loc = $fh->tell();
+    $fh->print(pack("n2", 0, $self->{'Num'}));
 
     for ($i = 0; $i < $self->{'Num'}; $i++)
-    { print $fh pack("nnN", $self->{'Tables'}[$i]{'Platform'}, $self->{'Tables'}[$i]{'Encoding'}, 0); }
+    { $fh->print(pack("nnN", $self->{'Tables'}[$i]{'Platform'}, $self->{'Tables'}[$i]{'Encoding'}, 0)); }
     
     for ($i = 0; $i < $self->{'Num'}; $i++)
     {
         $s = $self->{'Tables'}[$i];
         $s->{'val'}->tidy;
-        $s->{' outloc'} = tell($fh);
-        print $fh pack("n3", $s->{'Format'}, 0, $s->{'Ver'});       # come back for length
+        $s->{' outloc'} = $fh->tell();
+        $fh->print(pack("n3", $s->{'Format'}, 0, $s->{'Ver'}));       # come back for length
         if ($s->{'Format'} == 0)
         {
-            print $fh pack("C256", $s->{'val'}->at(0, 256));
+            $fh->print(pack("C256", $s->{'val'}->at(0, 256)));
         } elsif ($s->{'Format'} == 6)
         {
-            print $fh pack("n2", $s->{'Start'}, $s->{'Num'});
-            print $fh pack("n*", $s->{'val'}->at($s->{'Start'}, $s->{'Num'}));
+            $fh->print(pack("n2", $s->{'Start'}, $s->{'Num'}));
+            $fh->print(pack("n*", $s->{'val'}->at($s->{'Start'}, $s->{'Num'})));
         } elsif ($s->{'Format'} == 2)
         {
         } elsif ($s->{'Format'} == 4)
@@ -261,10 +257,10 @@ sub out
             for ($sRange = 1, $eSel = 0; $sRange <= $num; $eSel++)
             { $sRange <<= 1;}
             $eSel--;
-            print $fh pack("n4", $num * 2, $sRange, $eSel, ($num * 2) - $sRange);
-            print $fh pack("n*", map {$_->{'START'} + $_->{'LEN'} - 1} @$segs);
-            print $fh pack("n", 0);
-            print $fh pack("n*", map {$_->{'START'}} @$segs);
+            $fh->print(pack("n4", $num * 2, $sRange, $eSel, ($num * 2) - $sRange));
+            $fh->print(pack("n*", map {$_->{'START'} + $_->{'LEN'} - 1} @$segs));
+            $fh->print(pack("n", 0));
+            $fh->print(pack("n*", map {$_->{'START'}} @$segs));
 
             for ($j = 0; $j < $num; $j++)
             {
@@ -282,7 +278,7 @@ sub out
                 push (@range, $flat);
                 push (@deltas, ($delta ? $delta - $segs->[$j]{'START'} : 0));
             }
-            print $fh pack("n*", @deltas);
+            $fh->print(pack("n*", @deltas));
 
             $count = 0;
             for ($j = 0; $j < $num; $j++)
@@ -297,22 +293,22 @@ sub out
                 }
             }
 
-            print $fh pack("n*", @range);
+            $fh->print(pack("n*", @range));
 
             for ($j = 0; $j < $num; $j++)
             {
                 next if ($range[$j] == 0);
                 for ($k = 0; $k < $segs->[$j]{'LEN'}; $k++)
-                { print $fh pack("n", $segs->[$j]{'VAL'}[$k]); }
+                { $fh->print(pack("n", $segs->[$j]{'VAL'}[$k])); }
             }
         }
 
-        $loc = tell($fh);
-        seek($fh, $s->{' outloc'} + 2, 0);
-        print $fh pack("n", $loc - $s->{' outloc'});
-        seek($fh, $base_loc + 8 + ($i << 3), 0);
-        print $fh pack("N", $s->{' outloc'} - $base_loc);
-        seek($fh, $loc, 0);
+        $loc = $fh->tell();
+        $fh->seek($s->{' outloc'} + 2, 0);
+        $fh->print(pack("n", $loc - $s->{' outloc'}));
+        $fh->seek($base_loc + 8 + ($i << 3), 0);
+        $fh->print(pack("N", $s->{' outloc'} - $base_loc));
+        $fh->seek($loc, 0);
     }
     $self;
 }
@@ -334,7 +330,7 @@ sub reverse
     foreach $s (@{$table->{'val'}})
     {
         $first = $s->{'START'};
-        map {$res[$_] = $first++} @{$s->{'VAL'}};
+        map {$res[$_] = $first unless $res[$_]; $first++;} @{$s->{'VAL'}};
     }
     @res;
 }
@@ -349,7 +345,7 @@ No support for format 2 tables (MBCS)
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken E<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
