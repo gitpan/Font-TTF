@@ -182,30 +182,28 @@ the glyphs. Note that the glyphs themselves are not held in the C<glyph> table
 but in the C<loca> table, so adding glyphs, etc. automatically involves keeping
 the C<loca> table up to date.
 
+=head2 Creating fonts
 
-=head2 isDirty
+Suppose we were creating a font from scratch. How much information do we need
+to supply and how much will C<update> do for us?
 
-Tables know whether they are clean or dirty. If a table is dirty, then it does
-not truly reflect the underlying file representation which was its probable
-source. This is particularly important for C<glyph>s which can involve a great
-deal of work involved in order to do a full update of, say, C<maxp>. If, in fact
-all the glyphs correctly reflect their original read form, then there is no need
-to update from the deep information in each glyph. For example, on a P100 it can
-take 10 seconds to update the C<maxp> table from the glyphs for a 200 glyph font.
+The following information is required:
 
-The purpose of the C<isDirty> flag, therefore, is to indicate to dependent
-tables that a table they are dependent upon has changed in some way which
-requires the dependent tables to update themselves. It is also possible for a
-table to keep track of whether it needs updating using its own C<isDirty> flag.
-If the flag has a value of 1 then the table is considered up to date, but other
-dependent tables, should update themselves. If the value is 2 then this table
-needs to update itself too.
+    $f->{'loca'}{'glyphs'}
+    $f->{'head'}{'upem'}
+    $f->{'maxp'}{'numGlyphs'}   (doesn't come from $f->{'loca'}{'glyphs'})
+    $f->{'hmtx'}{'advance'}
+    $f->{'post'}['format'}
+    $f->{'post'}{'VAL'}
+    $f->{'cmap'}
+    $f->{'name'}
 
-For the most part, C<isDirty> is only rarely needed in situations where the
-changes a program makes to a font have far reaching implications. Usually when
-adding or deleting glyphs. There is no problem in setting C<isDirty>
-unnecessarily and calling C<$f->update>. The worst that can happen is your
-program slows down somewhat.
+Pretty much everything else is calculated for you. Details of what is needed
+for a glyph may be found in L<Font::TTF::Glyph>. Once we have all the
+information we need (and there is lots more that you could add) then we simply
+
+    $f->dirty;          # mark all tables dirty
+    $f->update;         # update the font
 
 =head1 AUTHOR
 

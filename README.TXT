@@ -28,16 +28,39 @@ writing of all other table types.
 In short, you can do almost anything with a standard TrueType font with
 this module. Be Brave!
 
-Also included are the following example scripts:
+The module also includes various useful utilities:
 
+check_attach    Checks an attachment point database against a font. See
+                ttfbuilder for details
 eurofix         Fixes fonts created for Win95 so that they work in Win98 and NT4
-                sp4.
+                sp4, Win2K and so on.
+hackos2         This old favourite lets you do unspeakable things to your OS/2
+                table, including sorting Unicode range bits and codepage bits
+                (Perl 4)
+psfix           Tidy up the postscript names in a font to be Postscript
+                conformant
+ttfbuilder      Build fonts from other fonts, including ligature building, etc.
+                Has excellent explanatory POD
+ttfname         Renames a font and allows access to name strings. This needs
+                a rewrite (Perl 4)
+ttfremap        Simpler font subsetter than ttfbuilder
+
+
+Also included are the following example scripts. To use these you will need to
+install them manually from the examples directory included in the distribution.
+
+StripCmap       Strips a specified cmap from the given font
+addpclt         Makes up values and adds a PCLT table to a font
+makemono        Makes a font mono spaced (Perl 4)
+symbol.rmp      Example remap file for ttfremap
+ttfdeltable     Deletes a specified table from a font
 ttfenc          Create .enc, .afm, .tfm and .map entry for a ttf file based on
                 Unicode rather than postscript. Requires afm2tfm and ttf2afm.
+ttfwidth        Create a table of interesting information regarding widths of
+                characters. FRET is a much better tool for this now (Perl 4)
+xmldump         Dumps a font as XML. The XML needs some work for some of the
+                more complex tables
 zerohyph        Create a zero width hyphen in place of the normal hyphen
-ttfremap        Allows creation of new MS cmap based on old one.
-psfix           Enforces Adobe Postscript naming conventions based on Unicode
-                cmap
 
 Any suggestions, improvements, additions, subclasses, etc. would be gratefully
 received and probably included in a future release. Please send them to me.
@@ -108,6 +131,13 @@ install by typing:
 To tidy up, type:
 
     make realclean
+
+Win32 users should use pmake instead of make. Alternatively installation can be
+done on Win32 by typing:
+
+    Setup
+
+Or using the install feature in tools like WinZip.
 
 =head1 CHANGES
 

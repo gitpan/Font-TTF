@@ -135,34 +135,36 @@ sub update
     my ($num, $i, $loc, $hmtx);
     my ($xMin, $yMin, $xMax, $yMax, $lsbx);
 
+    return undef unless ($self->SUPER::update);
+
     $num = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
     return undef unless (defined $self->{' PARENT'}{'hmtx'} && defined $self->{' PARENT'}{'loca'});
     $hmtx = $self->{' PARENT'}{'hmtx'}->read;
-    return undef unless ($self->{' PARENT'}{'loca'}{' isDirty'} || $hmtx->{' isDirty'});
     
     $self->{' PARENT'}{'loca'}->update;
-    $hmtx->update;
-    $lsbx = 1;
-    for ($i = 0; $i < $num; $i++)
+    unless ($hmtx->update)              # if we updated, then the flags will be set anyway.
     {
-        $loc = $self->{' PARENT'}{'loca'}{'glyphs'}[$i];
-        next unless defined $loc;
-        $loc->read;
-        $xMin = $loc->{'xMin'} if ($loc->{'xMin'} < $xMin || $i == 0);
-        $yMin = $loc->{'yMin'} if ($loc->{'yMin'} < $yMin || $i == 0);
-        $xMax = $loc->{'xMax'} if ($loc->{'xMax'} > $xMax);
-        $yMax = $loc->{'yMax'} if ($loc->{'yMax'} > $yMax);
-        $lsbx &= ($loc->{'xMin'} == $hmtx->{'lsb'}[$i]);
+        $lsbx = 1;
+        for ($i = 0; $i < $num; $i++)
+        {
+            $loc = $self->{' PARENT'}{'loca'}{'glyphs'}[$i];
+            next unless defined $loc;
+            $loc->read;
+            $xMin = $loc->{'xMin'} if ($loc->{'xMin'} < $xMin || $i == 0);
+            $yMin = $loc->{'yMin'} if ($loc->{'yMin'} < $yMin || $i == 0);
+            $xMax = $loc->{'xMax'} if ($loc->{'xMax'} > $xMax);
+            $yMax = $loc->{'yMax'} if ($loc->{'yMax'} > $yMax);
+            $lsbx &= ($loc->{'xMin'} == $hmtx->{'lsb'}[$i]);
+        }
+        $self->{'xMin'} = $xMin;
+        $self->{'yMin'} = $yMin;
+        $self->{'xMax'} = $xMax;
+        $self->{'yMax'} = $yMax;
+        if ($lsbx)
+        { $self->{'flags'} |= 2; }
+        else
+        { $self->{'flags'} &= ~2; }
     }
-    $self->{'xMin'} = $xMin;
-    $self->{'yMin'} = $yMin;
-    $self->{'xMax'} = $xMax;
-    $self->{'yMax'} = $yMax;
-    if ($lsbx)
-    { $self->{'flags'} |= 2; }
-    else
-    { $self->{'flags'} &= ~2; }
-    $self->{' isDirty'} = 1;            # tell everyone else we've changed (I assume)
     $self;
 }
 

@@ -21,7 +21,7 @@ the outputs of the two runs.
     # NB. no need to $g->update since $f->{'glyf'}->out will do it for us
 
     $f->out($ARGV[1]);
-    $f->DESTROY;               # forces close of $in and maybe memory reclaim!
+    $f->release;            # clear up memory forcefully!
 
 =head1 DESCRIPTION
 
@@ -118,7 +118,8 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.23;    # GST       30-MAY-2001     Memory leak fixed
+$VERSION = 0.24;    # MJPH       1-AUG-2001     Sort out update
+# $VERSION = 0.23;    # GST       30-MAY-2001     Memory leak fixed
 # $VERSION = 0.22;    # MJPH      09-APR-2001     Ensure all of AAT stuff included
 # $VERSION = 0.21;    # MJPH      23-MAR-2001     Improve Opentype support
 # $VERSION = 0.20;    # MJPH      13-JAN-2001     Add XML output and some of XML input, AAT & OT tables
@@ -584,11 +585,18 @@ sub update
     my ($self) = @_;
     
     $self->tables_do(sub { $_[0]->update; });
-    $self->tables_do(sub { $_[0]->{' isDirty'} = 0; });
 
     $self;
 }
 
+=head2 $f->dirty
+
+Dirties all the tables in the font
+
+=cut
+
+sub dirty
+{ $_[0]->tables_do(sub { $_[0]->dirty; }); $_[0]; }
 
 =head2 $f->tables_do(&func)
 

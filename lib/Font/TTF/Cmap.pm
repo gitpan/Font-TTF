@@ -137,7 +137,7 @@ sub read
                 $range = unpack("n", substr($dat, ($j << 1) + $num * 6 + 2, 2));
                 for ($k = $start; $k <= $end; $k++)
                 {
-                    if ($range == 0)
+                    if ($range == 0 || $range == 65535)         # support the buggy FOG with its range=65535 for final segment
                     { $id = $k + $delta; }
                     else
                     { $id = unpack("n", substr($dat, ($j << 1) + $num * 6 +

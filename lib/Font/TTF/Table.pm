@@ -280,7 +280,18 @@ themselves by setting isDirty above 1. This method resets that accordingly.
 =cut
 
 sub update
-{ $_[0]{' isDirty'} = 1 if $_[0]{' isDirty'} > 1; $_[0]; }
+{
+    my ($self) = @_;
+
+    if ($self->{' isDirty'})
+    {
+        $self->read;
+        $self->{' isDirty'} = 0;
+        return $self;
+    }
+    else
+    { return undef; }
+}
 
 
 =head2 $t->empty

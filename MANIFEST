@@ -1,6 +1,7 @@
 Examples/StripCmap.plx
 Examples/addpclt.plx
 Examples/makemono.plx
+Examples/symbol.rmp
 Examples/ttfdeltable.plx
 Examples/ttfenc.plx
 Examples/ttfwidth.plx
@@ -59,6 +60,7 @@ lib/Font/TTF/OS_2.pm
 lib/Font/TTF/OldCmap.pm
 lib/Font/TTF/OldMort.pm
 lib/Font/TTF/PCLT.pm
+lib/Font/TTF/PSNames.pm
 lib/Font/TTF/Post.pm
 lib/Font/TTF/Prep.pm
 lib/Font/TTF/Prop.pm
@@ -71,8 +73,10 @@ lib/Font/TTF/Vhea.pm
 lib/Font/TTF/Vmtx.pm
 lib/Font/TTF/XMLparse.pm
 pmake.bat
+scripts/check_attach.plx
 scripts/eurofix.plx
 scripts/hackos2.plx
 scripts/psfix.plx
+scripts/ttfbuilder.plx
 scripts/ttfname.plx
-tounix.pm
+scripts/ttfremap.plx
