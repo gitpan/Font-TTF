@@ -2,6 +2,7 @@ Examples/StripCmap.plx
 Examples/addpclt.plx
 Examples/makemono.plx
 Examples/symbol.rmp
+Examples/ttfaddname.plx
 Examples/ttfdeltable.plx
 Examples/ttfenc.plx
 Examples/ttfwidth.plx
@@ -69,9 +70,11 @@ lib/Font/TTF/Segarr.pm
 lib/Font/TTF/Table.pm
 lib/Font/TTF/Ttc.pm
 lib/Font/TTF/Ttopen.pm
+lib/Font/TTF/Useall.pm
 lib/Font/TTF/Utils.pm
 lib/Font/TTF/Vhea.pm
 lib/Font/TTF/Vmtx.pm
+lib/Font/TTF/Win32.pm
 lib/Font/TTF/XMLparse.pm
 lib/ttfmod.pl
 pmake.bat

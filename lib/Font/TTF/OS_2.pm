@@ -68,27 +68,75 @@ Panose variable has been broken down into its elements.
 =cut
 
 use strict;
-use vars qw(@ISA @fields @lens);
+use vars qw(@ISA @fields @lens @field_info);
 use Font::TTF::Table;
+
 @ISA = qw(Font::TTF::Table);
+@field_info = (
+    'xAvgCharWidth' => 's',
+    'usWeightClass' => 'S',
+    'usWidthClass' => 'S',
+    'fsType' => 's',
+    'ySubscriptXSize' => 's',
+    'ySubScriptYSize' => 's',
+    'ySubscriptXOffset' => 's',
+    'ySubscriptYOffset' => 's',
+    'ySuperscriptXSize' => 's',
+    'ySuperscriptYSize' => 's',
+    'ySuperscriptXOffset' => 's',
+    'ySuperscriptYOffset' => 's',
+    'yStrikeoutSize' => 's',
+    'yStrikeoutPosition' => 's',
+    'sFamilyClass' => 's',
+    'bFamilyType' => 'C',
+    'bSerifStyle' => 'C',
+    'bWeight' => 'C',
+    'bProportion' => 'C',
+    'bContrast' => 'C',
+    'bStrokeVariation' => 'C',
+    'bArmStyle' => 'C',
+    'bLetterform' => 'C',
+    'bMidline' => 'C',
+    'bXheight' => 'C',
+    'ulUnicodeRange1' => 'L',
+    'ulUnicodeRange2' => 'L',
+    'ulUnicodeRange3' => 'L',
+    'ulUnicodeRange4' => 'L',
+    'achVendID' => 'L',
+    'fsSelection' => 'S',
+    'usFirstCharIndex' => 'S',
+    'usLastCharIndex' => 'S',
+    'sTypoAscender' => 'S',
+    'sTypoDescender' => 's',
+    'sTypoLineGap' => 'S',
+    'usWinAscent' => 'S',
+    'usWinDescent' => 'S',
+    '' => '',
+    'ulCodePageRange1' => 'L',
+    'ulCodePageRange2' => 'L',
+    '' => '',
+    'xHeight' => 's',
+    'CapHeight' => 's',
+    'defaultChar' => 'S',
+    'breakChar' => 'S',
+    'maxLookups' => 's');
 
 use Font::TTF::Utils;
 
 sub init
 {
-    my ($k, $v, $c, $n, $i, $t);
+    my ($k, $v, $c, $n, $i, $t, $j);
 
     $n = 0;
     @lens = (76, 84, 94);
-    while ($t = <Font::TTF::OS_2::DATA>)
+    for ($j = 0; $j < $#field_info; $j += 2)
     {
-        $t =~ s/\r?\n$//;
-        if ($t =~ m/^\s*$/)
+        if ($field_info[$j] eq '')
         {
             $n++;
             next;
         }
-        ($k, $v, $c) = TTF_Init_Fields($t, $c);
+        ($k, $v, $c) = TTF_Init_Fields($field_info[$j], $c, $field_info[$j+1]);
         next unless defined $k && $k ne "";
         for ($i = $n; $i < 3; $i++)
         { $fields[$i]{$k} = $v; }
@@ -212,12 +260,35 @@ sub update
     $self->{'usFirstCharIndex'} = $keys[0];
     $self->{'usLastCharIndex'} = $keys[-1];
 
-    $table = $self->{' PARENT'}{'hhea'};
-    $self->{'sTypoAscender'} = $table->{'Ascender'};
-    $self->{'sTypoDescender'} = $table->{'Descender'};
-    $self->{'sTypoLineGap'} = $table->{'Linegap'};
-    $self->{'usWinAscent'} = $self->{'sTypoAscender'} + $self->{'sTypoLineGap'};
-    $self->{'usWinDescent'} = -$self->{'sTypoDescender'};
+    $table = $self->{' PARENT'}{'hhea'}->read;
+    
+    # try any way we can to get some real numbers passed around!
+    if ($table->{'Ascender'} != 0 || $table->{'Descender'} != 0)
+    {
+        $self->{'sTypoAscender'} = $table->{'Ascender'};
+        $self->{'sTypoDescender'} = $table->{'Descender'};
+        $self->{'sTypoLineGap'} = $table->{'Linegap'};
+        $self->{'usWinAscent'} = $self->{'sTypoAscender'} + $self->{'sTypoLineGap'};
+        $self->{'usWinDescent'} = -$self->{'sTypoDescender'};
+    }
+    elsif ($self->{'sTypoAscender'} != 0 || $self->{'sTypoDescender'} != 0)
+    {
+        $table->{'Ascender'} = $self->{'sTypoAscender'};
+        $table->{'Descender'} = $self->{'sTypoDescender'};
+        $table->{'Linegap'} = $self->{'sTypoLineGap'};
+        $self->{'usWinAscent'} = $self->{'sTypoAscender'} + $self->{'sTypoLineGap'};
+        $self->{'usWinDescent'} = -$self->{'sTypoDescender'};
+    } 
+    elsif ($self->{'usWinAscent'} != 0 || $self->{'usWinDescent'} != 0)
+    {
+        $self->{'sTypoAscender'} = $table->{'Ascender'} = $self->{'usWinAscent'};
+        $self->{'sTypoDescender'} = $table->{'Descender'} = -$self->{'usWinDescent'};
+        $self->{'sTypoLineGap'} = $table->{'Linegap'} = 0;
+    }
+    
+    $self->{'Version'} = 1 if (defined $self->{'ulCodePageRange1'} && $self->{'Version'} < 1);
+    $self->{'Version'} = 2 if (defined $self->{'maxLookups'} && $self->{'Version'} < 2);
+    
     $self;
 }
 
@@ -233,54 +304,3 @@ Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
-
-
-__DATA__
-xAvgCharWidth, s
-usWeightClass, S
-usWidthClass, S
-fsType, s
-ySubscriptXSize, s
-ySubScriptYSize, s
-ySubscriptXOffset, s
-ySubscriptYOffset, s
-ySuperscriptXSize, s
-ySuperscriptYSize, s
-ySuperscriptXOffset, s
-ySuperscriptYOffset, s
-yStrikeoutSize, s
-yStrikeoutPosition, s
-sFamilyClass, s
-bFamilyType, C
-bSerifStyle, C
-bWeight, C
-bProportion, C
-bContrast, C
-bStrokeVariation, C
-bArmStyle, C
-bLetterform, C
-bMidline, C
-bXheight, C
-ulUnicodeRange1, L
-ulUnicodeRange2, L
-ulUnicodeRange3, L
-ulUnicodeRange4, L
-achVendID, L
-fsSelection, S
-usFirstCharIndex, S
-usLastCharIndex, S
-sTypoAscender, S
-sTypoDescender, s
-sTypoLineGap, S
-usWinAscent, S
-usWinDescent, S
-
-ulCodePageRange1, L
-ulCodePageRange2, L
-
-xHeight, s
-CapHeight, s
-defaultChar, S
-breakChar, S
-maxLookups, s
-

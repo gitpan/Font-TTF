@@ -26,19 +26,30 @@ This is a simple table with just standards specified instance variables
 =cut
 
 use strict;
-use vars qw(@ISA %fields);
+use vars qw(@ISA %fields @field_info);
 
 require Font::TTF::Table;
 use Font::TTF::Utils;
 
 @ISA = qw(Font::TTF::Table);
+@field_info = (
+    'version' => 'f',
+    'glyphIndex' => 'L',
+    'horizontalBefore' => 'c',
+    'horizontalAfter' => 'c',
+    'horizontalCaretHead' => 'c',
+    'horizontalCaretBase' => 'c',
+    'verticalBefore' => 'c',
+    'verticalAfter' => 'c',
+    'verticalCaretHead' => 'c',
+    'verticalCaretBase' => 'c');
 
 sub init
 {
-    my ($k, $v, $c);
-    while (<Font::TTF::Fmtx::DATA>)
+    my ($k, $v, $c, $i);
+    for ($i = 0; $i < $#field_info; $i += 2)
     {
-        ($k, $v, $c) = TTF_Init_Fields($_, $c);
+        ($k, $v, $c) = TTF_Init_Fields($field_info[$i], $c, $field_info[$i + 1]);
         next unless defined $k && $k ne "";
         $fields{$k} = $v;
     }
@@ -95,17 +106,3 @@ Jonathan Kew L<Jonathan_Kew@sil.org>. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
-
-
-__DATA__
-version, f
-glyphIndex, L
-horizontalBefore, c
-horizontalAfter, c
-horizontalCaretHead, c
-horizontalCaretBase, c
-verticalBefore, c
-verticalAfter, c
-verticalCaretHead, c
-verticalCaretBase, c
-

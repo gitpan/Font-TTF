@@ -205,6 +205,10 @@ sub out_xml
     $self;
 }
 
+sub release
+{ }
+
+
 =head1 AUTHOR
 
 Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and

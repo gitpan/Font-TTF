@@ -33,11 +33,14 @@ in the fields associative array for the class
 
 sub TTF_Init_Fields
 {
-    my ($str, $pos) = @_;
+    my ($str, $pos, $inval) = @_;
     my ($key, $val, $res, $len, $rel);
 
-    $str =~ s/\r?\n$//o;   
-    ($key, $val) = split(',\s*', $str);
+    $str =~ s/\r?\n$//o;
+    if ($inval)
+    { ($key, $val) = ($str, $inval); }
+    else
+    { ($key, $val) = split(',\s*', $str); }
     return (undef, undef, 0) unless (defined $key && $key ne "");
     if ($val =~ m/^(\+?)(\d*)(\D+)(\d*)/oi)
     {

@@ -220,6 +220,29 @@ sub find_ms
 }
 
 
+=head2 $t->ms_enc
+
+Returns the encoding of the microsoft table (0 => symbol, etc.). Returns undef if there is
+no Microsoft cmap.
+
+=cut
+
+sub ms_enc
+{
+    my ($self) = @_;
+    my ($s);
+    
+    return $self->{' mstable'}{'Encoding'} 
+        if (defined $self->{' mstable'} && $self->{' mstable'}{'Platform'} == 3);
+    
+    foreach $s (@{$self->{'Tables'}})
+    {
+        return $s->{'Encoding'} if ($s->{'Platform'} == 3);
+    }
+    return undef;
+}
+
+
 =head2 $t->out($fh)
 
 Writes out a cmap table to a filehandle. If it has not been read, then

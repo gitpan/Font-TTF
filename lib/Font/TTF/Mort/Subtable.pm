@@ -10,7 +10,7 @@ Font::TTF::Mort::Subtable
 
 use strict;
 use Font::TTF::Utils;
-use Font::TTF::AAT::AATutils;
+use Font::TTF::AATutils;
 
 require Font::TTF::Mort::Rearrangement;
 require Font::TTF::Mort::Contextual;

@@ -64,42 +64,58 @@ standard:
 =cut
 
 use strict;
-use vars qw(@ISA @base_set %base_set %fields $VERSION $no25);
+use vars qw(@ISA @base_set %base_set %fields $VERSION $no25 @field_info @base_set);
 require Font::TTF::Table;
 use Font::TTF::Utils;
 
 $no25 = 1;                  # officially deprecated format 2.5 tables in MS spec 1.3
 
 @ISA = qw(Font::TTF::Table);
+@field_info = (
+    'FormatType' => 'f',
+    'italicAngle' => 'f',
+    'underlinePosition' => 's',
+    'underlineThickness' => 's',
+    'isFixedPitch' => 'L',
+    'minMemType42' => 'L',
+    'maxMemType42' => 'L',
+    'minMemType1' => 'L',
+    'maxMemType1' => 'L');
+@base_set = qw(.notdef null CR space exclam quotedbl numbersign dollar percent ampersand quotesingle
+    parenleft parenright asterisk plus comma hyphen period slash zero one two three four five six
+    seven eight nine colon semicolon less equal greater question at A B C D E F G H I J K L M N O P Q
+    R S T U V W X Y Z bracketleft backslash bracketright asciicircum underscore grave a b c d e f g h
+    i j k l m n o p q r s t u v w x y z braceleft bar braceright asciitilde Adieresis Aring Ccedilla
+    Eacute Ntilde Odieresis Udieresis aacute agrave acircumflex adieresis atilde aring ccedilla eacute
+    egrave ecircumflex edieresis iacute igrave icircumflex idieresis ntilde oacute ograve ocircumflex
+    odieresis otilde uacute ugrave ucircumflex udieresis dagger degree cent sterling section bullet
+    paragraph germandbls registered copyright trademark acute dieresis notequal AE Oslash infinity
+    plusminus lessequal greaterequal yen mu1 partialdiff summation product pi integral ordfeminine
+    ordmasculine Omega ae oslash questiondown exclamdown logicalnot radical florin approxequal
+    increment guillemotleft guillemotright ellipsis nbspace Agrave Atilde Otilde OE oe endash emdash
+    quotedblleft quotedblright quoteleft quoteright divide lozenge ydieresis Ydieresis fraction currency
+    guilsinglleft guilsinglright fi fl daggerdbl middot quotesinglbase quotedblbase perthousand
+    Acircumflex Ecircumflex Aacute Edieresis Egrave Iacute Icircumflex Idieresis Igrave Oacute Ocircumflex
+    applelogo Ograve Uacute Ucircumflex Ugrave dotlessi circumflex tilde overscore breve dotaccent
+    ring cedilla hungarumlaut ogonek caron Lslash lslash Scaron scaron Zcaron zcaron brokenbar Eth eth
+    Yacute yacute Thorn thorn minus multiply onesuperior twosuperior threesuperior onehalf onequarter
+    threequarters franc Gbreve gbreve Idot Scedilla scedilla Cacute cacute Ccaron ccaron dslash);
 
 $VERSION = 0.01;        # MJPH   5-AUG-1998     Re-organise data structures
 
 sub init
 {
-    my ($mode, $k, $v, $c, $pnum);
-    
-    $mode = 0;
-    while(<Font::TTF::Post::DATA>)
+    my ($k, $v, $c, $i);
+    for ($i = 0; $i < $#field_info; $i += 2)
     {
-        s/\r?\n$//;
-        if ($_ eq "")
-        {
-            $mode++;
-            next;
-        }
-        if ($mode == 0)
-        {
-            ($k, $v, $c) = TTF_Init_Fields($_, $c);
-            next unless defined $k && $k ne "";
-            $fields{$k} = $v;
-        }
-        elsif ($mode == 1)
-        {
-            push(@base_set, $_);
-            $base_set{$_} = $pnum++;
-        }
+        ($k, $v, $c) = TTF_Init_Fields($field_info[$i], $c, $field_info[$i + 1]);
+        next unless defined $k && $k ne "";
+        $fields{$k} = $v;
     }
+    $i = 0;
+    %base_set = map {$_ => $i++} @base_set;
 }
+
 
 =head2 $t->read
 
@@ -115,7 +131,7 @@ sub read
 
     $numGlyphs = $self->{' PARENT'}{'maxp'}->read->{'numGlyphs'};
     $self->SUPER::read or return $self;
-    init unless ($#base_set > 2);
+    init unless ($fields{'FormatType'});
     $fh->read($dat, 32);
     TTF_Read_Fields($self, $dat, \%fields);
 
@@ -188,6 +204,7 @@ sub out
 
     $num = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
 
+    init unless ($fields{'FormatType'});
 
     for ($i = $#{$self->{'VAL'}}; !defined $self->{'VAL'}[$i] && $i > 0; $i--)
     { pop(@{$self->{'VAL'}}); }
@@ -285,274 +302,4 @@ Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
-
-__DATA__
-FormatType, f
-italicAngle, f
-underlinePosition, s
-underlineThickness, s
-isFixedPitch, L
-minMemType42, L
-maxMemType42, L
-minMemType1, L
-maxMemType1, L
-
-.notdef
-null
-CR
-space
-exclam
-quotedbl
-numbersign
-dollar
-percent
-ampersand
-quotesingle
-parenleft
-parenright
-asterisk
-plus
-comma
-hyphen
-period
-slash
-zero
-one
-two
-three
-four
-five
-six
-seven
-eight
-nine
-colon
-semicolon
-less
-equal
-greater
-question
-at
-A
-B
-C
-D
-E
-F
-G
-H
-I
-J
-K
-L
-M
-N
-O
-P
-Q
-R
-S
-T
-U
-V
-W
-X
-Y
-Z
-bracketleft
-backslash
-bracketright
-asciicircum
-underscore
-grave
-a
-b
-c
-d
-e
-f
-g
-h
-i
-j
-k
-l
-m
-n
-o
-p
-q
-r
-s
-t
-u
-v
-w
-x
-y
-z
-braceleft
-bar
-braceright
-asciitilde
-Adieresis
-Aring
-Ccedilla
-Eacute
-Ntilde
-Odieresis
-Udieresis
-aacute
-agrave
-acircumflex
-adieresis
-atilde
-aring
-ccedilla
-eacute
-egrave
-ecircumflex
-edieresis
-iacute
-igrave
-icircumflex
-idieresis
-ntilde
-oacute
-ograve
-ocircumflex
-odieresis
-otilde
-uacute
-ugrave
-ucircumflex
-udieresis
-dagger
-degree
-cent
-sterling
-section
-bullet
-paragraph
-germandbls
-registered
-copyright
-trademark
-acute
-dieresis
-notequal
-AE
-Oslash
-infinity
-plusminus
-lessequal
-greaterequal
-yen
-mu1
-partialdiff
-summation
-product
-pi
-integral
-ordfeminine
-ordmasculine
-Omega
-ae
-oslash
-questiondown
-exclamdown
-logicalnot
-radical
-florin
-approxequal
-increment
-guillemotleft
-guillemotright
-ellipsis
-nbspace
-Agrave
-Atilde
-Otilde
-OE
-oe
-endash
-emdash
-quotedblleft
-quotedblright
-quoteleft
-quoteright
-divide
-lozenge
-ydieresis
-Ydieresis
-fraction
-currency
-guilsinglleft
-guilsinglright
-fi
-fl
-daggerdbl
-middot
-quotesinglbase
-quotedblbase
-perthousand
-Acircumflex
-Ecircumflex
-Aacute
-Edieresis
-Egrave
-Iacute
-Icircumflex
-Idieresis
-Igrave
-Oacute
-Ocircumflex
-applelogo
-Ograve
-Uacute
-Ucircumflex
-Ugrave
-dotlessi
-circumflex
-tilde
-overscore
-breve
-dotaccent
-ring
-cedilla
-hungarumlaut
-ogonek
-caron
-Lslash
-lslash
-Scaron
-scaron
-Zcaron
-zcaron
-brokenbar
-Eth
-eth
-Yacute
-yacute
-Thorn
-thorn
-minus
-multiply
-onesuperior
-twosuperior
-threesuperior
-onehalf
-onequarter
-threequarters
-franc
-Gbreve
-gbreve
-Idot
-Scedilla
-scedilla
-Cacute
-cacute
-Ccaron
-ccaron
-dslash
 

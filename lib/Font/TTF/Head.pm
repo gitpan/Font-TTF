@@ -40,19 +40,37 @@ The two dates are held as an array of two unsigned longs (32-bits)
 =cut
 
 use strict;
-use vars qw(@ISA %fields);
+use vars qw(@ISA %fields @field_info);
 
 require Font::TTF::Table;
 use Font::TTF::Utils;
 
 @ISA = qw(Font::TTF::Table);
+@field_info = (
+    'version' => 'f',
+    'fontRevision' => 'f',
+    'checkSumAdjustment' => 'L',
+    'magicNumber' => 'L',
+    'flags' => 'S',
+    'unitsPerEm' => 'S',
+    'created' => 'L2',
+    'modified' => 'L2',
+    'xMin' => 's',
+    'yMin' => 's',
+    'xMax' => 's',
+    'yMax' => 's',
+    'macStyle' => 'S',
+    'lowestRecPPEM' => 'S',
+    'fontDirectionHint' => 's',
+    'indexToLocFormat' => 's',
+    'glyphDataFormat' => 's');
 
 sub init
 {
-    my ($k, $v, $c);
-    while (<Font::TTF::Head::DATA>)
+    my ($k, $v, $c, $i);
+    for ($i = 0; $i < $#field_info; $i += 2)
     {
-        ($k, $v, $c) = TTF_Init_Fields($_, $c);
+        ($k, $v, $c) = TTF_Init_Fields($field_info[$i], $c, $field_info[$i + 1]);
         next unless defined $k && $k ne "";
         $fields{$k} = $v;
     }
@@ -229,24 +247,4 @@ Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
-
-
-__DATA__
-version, f
-fontRevision, f
-checkSumAdjustment, L
-magicNumber, L
-flags, S
-unitsPerEm, S
-created, L2
-modified, L2
-xMin, s
-yMin, s
-xMax, s
-yMax, s
-macStyle, S
-lowestRecPPEM, S
-fontDirectionHint, s
-indexToLocFormat, s
-glyphDataFormat, s
 

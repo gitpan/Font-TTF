@@ -6,5 +6,6 @@ CVS/
 \.tar
 misc/
 Build/
+exes/
 \.cvsignore
 ^#

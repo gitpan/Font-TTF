@@ -263,7 +263,7 @@ sub out
         $ltables = {};
         $loff = $fh->tell() - $loc;
         $out = pack('n*',
-                        Font::TTF::ref_cache($self->{'LIG'}{'COVERAGE'}, $ltables, 0),
+                        Font::TTF::Ttopen->ref_cache($self->{'LIG'}{'COVERAGE'}, $ltables, 0),
                         0, $#{$self->{'LIG'}{'LIGS'}} + 1,
                         (0) x ($#{$self->{'LIG'}{'LIGS'}} + 1));
         push (@reftables, [$ltables, 0]);

@@ -11,7 +11,7 @@ Font::TTF::Mort::Insertion
 use strict;
 use vars qw(@ISA);
 use Font::TTF::Utils;
-use Font::TTF::AAT::AATutils;
+use Font::TTF::AATutils;
 
 @ISA = qw(Font::TTF::Mort::Subtable);
 

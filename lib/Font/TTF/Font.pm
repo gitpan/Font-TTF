@@ -118,7 +118,9 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.26;    # MJPH      19-SEP-2001     Update ttfbuilder
+$VERSION = 0.28;    # MJPH       13-MAR-2002     update ttfbuilder, add Font::TTF::Cmap::ms_enc()
+# $VERSION = 0.27;    # MJPH       6-FEB-2002     update ttfbuilder, support no fpgm, no more __DATA__
+# $VERSION = 0.26;    # MJPH      19-SEP-2001     Update ttfbuilder
 # $VERSION = 0.25;    # MJPH      18-SEP-2001     problems in update of head
 # $VERSION = 0.24;    # MJPH       1-AUG-2001     Sort out update
 # $VERSION = 0.23;    # GST       30-MAY-2001     Memory leak fixed

@@ -190,16 +190,23 @@ the following information is required for each component.
 =cut
 
 use strict;
-use vars qw(%fields);
+use vars qw(%fields @field_info);
 use Font::TTF::Utils;
 use Font::TTF::Table;
 
+@field_info = (
+    'numberOfContours' => 's', 
+    'xMin' => 's', 
+    'yMin' => 's',
+    'xMax' => 's',
+    'yMax' => 's');
+
 sub init
 {
-    my ($k, $v, $c);
-    while (<Font::TTF::Glyph::DATA>)
+    my ($k, $v, $c, $i);
+    for ($i = 0; $i < $#field_info; $i += 2)
     {
-        ($k, $v, $c) = TTF_Init_Fields($_, $c);
+        ($k, $v, $c) = TTF_Init_Fields($field_info[$i], $c, $field_info[$i + 1]);
         next unless defined $k && $k ne "";
         $fields{$k} = $v;
     }
@@ -805,11 +812,3 @@ Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
-
-__DATA__
-numberOfContours, s
-xMin, s
-yMin, s
-xMax, s
-yMax, s
-

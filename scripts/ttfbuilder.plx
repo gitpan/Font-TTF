@@ -1,4 +1,3 @@
-#! perl
 use Font::TTF::Font;
 use Font::TTF::Glyf;
 use Font::TTF::Glyph;
@@ -9,7 +8,10 @@ use XML::Parser::Expat;
 use Pod::Usage;
 use Getopt::Std;
 
-$VERSION = 0.04;    # MJPH      19-SEP-2001     documentation improvements add Pod::Usage
+$VERSION = 0.06;    # MJPH       7-MAR-2002     errors, base glyphs with no outlines, 
+#                                                 properties & notes, symbol fonts, surrogates
+# $VERSION = 0.05;    # MJPH      10-DEC-2001     improve error messages
+# $VERSION = 0.04;    # MJPH      19-SEP-2001     documentation improvements add Pod::Usage
 # $VERSION = 0.03;    # MJPH      18-SEP-2001     add ascent, descent, linegap attributes
 # $VERSION = 0.02;    #   MJPH    12-SEP-2001     -x now optional, -a bug fixes
 # $VERSION = 0.01;    #   MJPH    31-JUL-2001     Original
@@ -18,18 +20,22 @@ getopts('ac:d:hx:z:');
 
 unless ((defined $ARGV[1] && defined $opt_c) || defined $opt_h)
 {
-    die <<'EOT';
-    ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] infile.ttf outfile.ttf
+    die <<"EOT";
+    TTFBUILDER version $VERSION
+    
+    ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] \\
+        infile.ttf outfile.ttf
 Builds outfile.ttf from infile.ttf according to config.xml. Also requires an
 attachment point database (attach.xml) and can generate out.xml.
 
     -a          initialise output font with all the glyphs of the input font
                 and append new glyphs to that
     -c file     Configuration file to use
-    -d bits     Don't do certain things:
-                0: Set dates in the font to now
-                1: Auto-create postscript names for component glyphs
-                2: Hack the copyright message (if none set)
+    -d bits     Flag bits
+                0: Don't Set dates in the font to now
+                1: Don't Auto-create postscript names for component glyphs
+                2: Don't Hack the copyright message (if none set)
+                3: Mark target font as symbol font
     -h          Help
     -x file     Attachment database to read
     -z file     Attachment database to output
@@ -44,14 +50,18 @@ if ($opt_h)
 
 $if = Font::TTF::Font->open($ARGV[0]) || die "Can't read font $ARGV[0]";
 $of = Font::TTF::Font->new();
-foreach $t ('OS/2', 'cvt ', 'fpgm', 'head', 'hhea', 'maxp', 'name', 'prep', 'post')
+foreach $t ('OS/2', 'cvt ', 'fpgm', 'gasp', 'head', 'hhea', 'maxp', 'name', 'prep', 'post')
 {
+    next unless defined $if->{$t};
     $if->{$t}->read;
     $of->{$t} = bless {%{$if->{$t}}}, ref $if->{$t};
     $of->{$t}{' PARENT'} = $of;
 }
 
 $c = $if->{'cmap'}->read->find_ms;
+$ifissymbol = $if->{'cmap'}->ms_enc;
+$ifissymbol = 1 if (defined $ifissymbol && $ifissymbol == 0);
+
 $if->{'hmtx'}->read;
 $fname = $if->{'name'}->find_name(4);
 
@@ -66,7 +76,7 @@ if (defined $opt_x)
             $gid = $attrs{'GID'} || $c->{'val'}{hex($attrs{'UID'})}
                 || $if->{'post'}{'STRINGS'}{$attrs{'PSName'}};
             if ($gid == 0 && ($attrs{'PSName'} || $attrs{'UID'}))
-            { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'}"); }
+            { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'} in $opt_x"); }
             $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
             $xml_dat[$gid]{'UID'} = $attrs{'UID'};
         } elsif ($tag eq 'point')
@@ -82,14 +92,30 @@ if (defined $opt_x)
         {
             $fontname = $attrs{'name'};
             $fontupem = $attrs{'upem'};
+        } elsif ($tag eq 'property')
+        {
+            $xml_dat[$gid]{'properties'}{$attrs{'name'}} = $attrs{'value'};
+        } elsif ($tag eq 'note')
+        {
+            $currtext = '';
         }
     }, 'End' => sub {
         my ($xml, $tag) = @_;
 
         if ($tag eq 'point')
-        { $xml->xperror('Attachment point must have location or contour')
+        { $xml->xpcarp("Attachment point must have location or contour in $opt_x")
             unless (defined $xml_dat[$gid]{'points'}{$pname}{'cont'}
                     || defined $xml_dat[$gid]{'points'}{$pname}{'loc'}); }
+        elsif ($tag eq 'note')
+        {
+            $currtext =~ s/\s*(.*?)\s*$//o;
+            $xml_dat[$gid]{'notes'} = $currtext;
+            $currtext = '';
+        }
+    }, 'Char' => sub {
+        my ($xml, $str) = @_;
+        
+        $currtext .= $str;
     });
 
     $xml->parsefile($opt_x) || die "Can't read $opt_x";
@@ -130,6 +156,8 @@ if ($opt_a)
             $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
             $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
         }
+        $aglyph->{'properties'} = {%{$xml_dat[$i]{'properties'}}} if defined $xml_dat[$i]{'properties'};
+        $aglyph->{'notes'} = $xml_dat[$i]{'notes'} if defined $xml_dat[$i]{'notes'};
         $g->{'required'} = $i;
         push (@glyphs, $aglyph);
         $of->{'hmtx'}{'advance'}[$i] = $if->{'hmtx'}{'advance'}[$i];
@@ -160,7 +188,7 @@ $xml->setHandlers('Start' => sub {
         unless (($attrs{'PSName'} && ($gid = $if->{'post'}{'STRINGS'}{$attrs{'PSName'}}))
                 || ($attrs{'UID'} && ($gid = $c->{'val'}{hex($attrs{'UID'})}))
                 || ($gid = $attrs{'GID'}) || defined $attrs{'GID'})
-        { $xml->xpcarp("Can't find glyph $attrs{'PSName'}/U+$attrs{'UID'} for $tag"); }
+        { $xml->xpcarp("Can't find glyph $attrs{PSName}/U+$attrs{UID} for $tag in $opt_c"); }
 
         $aglyph = {
             'gid' => $gid,
@@ -178,6 +206,8 @@ $xml->setHandlers('Start' => sub {
             $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
             $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
         }
+        $aglyph->{'properties'} = {%{$xml_dat[$i]{'properties'}}} if defined $xml_dat[$i]{'properties'};
+        $aglyph->{'notes'} = $xml_dat[$i]{'notes'} if defined $xml_dat[$i]{'notes'};
 
         if ($tag eq 'attach')                            # position attachment
         {
@@ -186,13 +216,17 @@ $xml->setHandlers('Start' => sub {
             {
                 $pt = $xml_dat[$curbase->{'gid'}]{'points'}{$attrs{'at'}};
                 if (!defined $pt)
-                { $xml->xpcarp("Undefined attachment point $attrs{'at'} on glyph $curbase->{'gid'}"); }
+                { $xml->xpcarp("Undefined attachment point $attrs{'at'} on glyph $xml_dat[$curbase->{'gid'}]{'ps'} in $opt_c"); }
                 elsif (!defined $pt->{'loc'})
                 {
                     if (defined $pt->{'cont'})
-                    { $pt->{'loc'} = lookup_pt($curbase->{'glyph'}, $pt->{'cont'}); }
+                    { 
+                        $xml->xpcarp("glyph $xml_dat[$curbase->{'gid'}]{'ps'} has no outline in $opt_c") 
+                            unless ($curbase->{'glyph'});
+                        $pt->{'loc'} = lookup_pt($curbase->{'glyph'}, $pt->{'cont'}); 
+                    }
                     else
-                    { $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $curbase->{'gid'}"); }
+                    { $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$curbase->{'gid'}]{'ps'} in $opt_c"); }
                 }
                 ($atx, $aty) = @{$pt->{'loc'}};
                 delete $curbase->{'points'}{$attrs{'at'}};      # used it so delete it
@@ -206,17 +240,17 @@ $xml->setHandlers('Start' => sub {
             {
                 $pt = $xml_dat[$aglyph->{'gid'}]{'points'}{$attrs{'with'}};
                 if (!defined $pt)
-                { $xml->xpcarp("Undefined attachment point $attrs{'with'} on glyph $aglyph->{'gid'}"); }
+                { $xml->xpcarp("Undefined attachment point $attrs{'with'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c"); }
                 elsif (!defined $pt->{'loc'})
                 {
                     if (defined $pt->{'cont'})
                     { $pt->{'loc'} = lookup_pt($aglyph->{'glyph'}, $pt->{'cont'}); }
                     else
-                    { $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $aglyph->{'gid'}"); }
+                    { $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c"); }
                 }
                 ($withx, $withy) = @{$pt->{'loc'}};
                 delete $aglyph->{'points'}{$attrs{'with'}}     # delete if attaching to a real glyph
-                        if ($curbase->{'glyph'}{'numPoints'} != scalar @{$curbase->{'glyph'}{'endPoints'}});
+                        if (defined $curbase->{'glyph'} && $curbase->{'glyph'}{'numPoints'} != scalar @{$curbase->{'glyph'}{'endPoints'}});
             } else
             {
                 $withx = $if->{'hmtx'}{'advance'}[$aglyph->{'gid'}] / 2;
@@ -239,12 +273,37 @@ $xml->setHandlers('Start' => sub {
     elsif ($tag eq 'string')
     {
         $cur_str = {%attrs};
+        $currtext = '';
     }
     elsif ($tag eq 'font')
     {
+        my ($s);
+        
         $of->{'hhea'}{'Ascender'} = $attrs{'ascent'} if defined $attrs{'ascent'};
         $of->{'hhea'}{'Descender'} = $attrs{'descent'} if defined $attrs{'descent'};
         $of->{'hhea'}{'LineGap'} = $attrs{'linegap'} if defined $attrs{'linegap'};
+        if ($s = $attrs{'cp'})
+        {
+            $s = '0' x (16 - length($s)) . $s;
+            $of->{'OS/2'}{'ulCodePageRange1'} = hex(substr($s, 8));
+            $of->{'OS/2'}{'ulCodePageRange2'} = hex(substr($s, 0, 8));
+        }
+        if ($s = $attrs{'coverage'})
+        {
+            $s = '0' x (32 - length($s)) . $s;
+            $of->{'OS/2'}{'ulUnicodeRange1'} = hex(substr($s, 24));
+            $of->{'OS/2'}{'ulUnicodeRange2'} = hex(substr($s, 16, 8));
+            $of->{'OS/2'}{'ulUnicodeRange3'} = hex(substr($s, 8, 8));
+            $of->{'OS/2'}{'ulUnicodeRange4'} = hex(substr($s, 0, 8));
+        }
+    }
+    elsif ($tag eq 'property')
+    {
+        $curbase->{'properties'}{$attrs{'name'}} = $attrs{'value'};
+    }
+    elsif ($tag eq 'note')
+    {
+        $currtext = '';
     }
 }, 'End' => sub {
     my ($xml, $tag) = @_;
@@ -255,6 +314,18 @@ $xml->setHandlers('Start' => sub {
         $curbase->{'adv'} = $if->{'hmtx'}{'advance'}[$curbase->{'gid'}]
             unless (defined $curbase->{'adv'});
         $xml->{' curbase'} = $curbase->{'parent'};
+        $curbase = $xml->{' curbase'};
+        if ($tag eq 'base' && scalar @{$curbase->{'glyphs'}} == 1)
+        {
+            my ($k);
+            foreach $k (keys %{$curbase->{'glyphs'}[0]{'properties'}})
+            {
+                $curbase->{'properties'}{$k} = $curbase->{'glyphs'}[0]{'properties'}{$k} 
+                        unless defined $curbase->{'properties'}{$k};
+            }
+            $curbase->{'notes'} = $curbase->{'glyphs'}[0]{'notes'} 
+                    if (defined $curbase->{'glyphs'}[0]{'notes'} && !defined $curbase->{'notes'});
+        }
     }
     elsif ($tag eq 'glyph')
     {
@@ -298,8 +369,9 @@ $xml->setHandlers('Start' => sub {
     }
     elsif ($tag eq 'string')
     {
-        $cur_str->{'text'} =~ s/^\s*(.*?)\s*$/$1/o;
-        $cur_str->{'text'} =~ s/\s(?=\s)//og;
+        $currtext =~ s/^\s*(.*?)\s*$/$1/o;
+        $currtext =~ s/\s(?=\s)//og;
+        $cur_str->{'text'} = $currtext;
         if ($cur_str->{'num'} eq 'name')
         {
             my ($style);
@@ -317,10 +389,15 @@ $xml->setHandlers('Start' => sub {
         { $done_cpyrt = 1; }
         undef $cur_str;
     }
+    elsif ($tag eq 'note')
+    {
+        $currtext =~s/^\s*(.*?)\s*$/$1/o;
+        $curbase->{'notes'} = $currtext;
+    }
 }, 'Char' => sub {
     my ($xml, $text) = @_;
 
-    $cur_str->{'text'} .= $text if (defined $cur_str);
+    $currtext .= $text;
 });
 
 $xml->parsefile($opt_c) || die "Can't read $opt_c";
@@ -553,12 +630,30 @@ if ($bc)
         'Ver' => 0,
         'val' => $bc});
 }
+
 push (@{$of->{'cmap'}{'Tables'}}, {
     'Platform' => 3,
-    'Encoding' => 1,
+    'Encoding' => ($uidmax > 0xFFFF ? 10 : ($opt_d & 8 ? 0 : 1)),
     'Format' => $format,
     'Ver' => 0,
     'val' => $oc});
+    
+if ($uidmax > 0xFFFF)       # also include a BMP cmap
+{
+    my ($k);
+    
+    foreach $k (keys %{$oc})
+    {
+        $bmpc{$k} = $oc->{$k} if ($k <= 0xFFFF);
+    }
+    push (@{$of->{'cmap'}{'Tables'}}, {
+        'Platform' => 3,
+        'Encoding' => ($opt_d & 8 ? 0 : 1),
+        'Format' => $4,
+        'Ver' => 0,
+        'val' => $bmpc});
+}
+
 $of->{'cmap'}{'Num'} = scalar @{$of->{'cmap'}{'Tables'}};
 
 unless ($done_cpyrt || ($opt_d & 4))
@@ -566,6 +661,20 @@ unless ($done_cpyrt || ($opt_d & 4))
     my ($text) = $of->{'name'}->find_name(0);
     $text .= " Derived from $fname by ttfbuilder v$VERSION";
     do_name($of, {'num' => 0, 'text' => $text});
+}
+
+if ($ifissymbol ^ ($opt_d & 8 ? 1 : 0))
+{
+    my ($n, $s);
+    
+    foreach $n (@{$of->{'name'}{'strings'}})
+    {
+        if (defined ($s = $n->[3][!$ifissymbol]))
+        {
+            undef $n->[3][!$ifissymbol];
+            $n->[3][$ifissymbol] = $s;
+        }
+    }
 }
 
 unless ($opt_d & 1)
@@ -600,16 +709,15 @@ sub resolve_glyph
         $yMin = $glyph->{'yMin'};
         $xMax = $glyph->{'xMax'};
         $yMax = $glyph->{'yMax'};
-
-        foreach $c (@{$g->{'glyphs'}})
-        {
-            $pathcount = resolve_glyph($c, @{$g->{'offset'}}, $pathcount);
-            $adv = $c->{'adv'} if ($c->{'adv'} > $adv);
-            ($xMin, $yMin, $xMax, $yMax) = findbox($xMin, $yMin, $xMax, $yMax, $c->{'bbox'}, $c->{'offset'});
-            push (@{$g->{'glyph_list'}}, @{$c->{'glyph_list'}});
-        }
-        $g->{'bbox'} = [$xMin, $yMin, $xMax, $yMax];
     }
+    foreach $c (@{$g->{'glyphs'}})
+    {
+        $pathcount = resolve_glyph($c, @{$g->{'offset'}}, $pathcount);
+        $adv = $c->{'adv'} if ($c->{'adv'} > $adv);
+        ($xMin, $yMin, $xMax, $yMax) = findbox($xMin, $yMin, $xMax, $yMax, $c->{'bbox'}, $c->{'offset'});
+        push (@{$g->{'glyph_list'}}, @{$c->{'glyph_list'}});
+    }
+    $g->{'bbox'} = [$xMin, $yMin, $xMax, $yMax];
     $g->{'adv'} = $adv;
     return $pathcount;
 }
@@ -713,7 +821,9 @@ The main features of ttfbuilder are
 =item *
 
 Ability to create glyphs that are not in any cmap and to reference such glyphs via
-postscript name, glyph id or Unicode cmap entry.
+postscript name, glyph id or Unicode cmap entry. Also the ability to create non-BMP
+Unicode entries and create surrogate based cmaps. In addition, symbol fonts are
+supported.
 
 =item *
 
@@ -723,7 +833,8 @@ absolute locations in terms of shifting.
 
 =item *
 
-Ability to change the name of the font and change strings in the name table.
+Ability to change the name of the font and change strings in the name table. And
+set OS/2 coverage bits.
 
 =back
 
@@ -808,7 +919,7 @@ The DTD for the configuration file is:
 
     <!ELEMENT glyphs (glyph)+>
 
-    <!ELEMENT glyph (advance | base)+>
+    <!ELEMENT glyph (property* | note | (advance | base)+)>
     <!ATTLIST glyph
         PSNAme CDATA #IMPLIED
         UID    CDATA #IMPLIED
@@ -828,14 +939,21 @@ The DTD for the configuration file is:
         with   CDATA #IMPLIED
         at     CDATA #IMPLIED>
 
-    <!ELEMENT advance #EMPTY>
+    <!ELEMENT advance EMPTY>
     <!ATTLIST advance
         width  CDATA #REQUIRED>
 
-    <!ELEMENT shift #EMPTY>
+    <!ELEMENT shift EMPTY>
     <!ATTLIST shift
         x      CDATA #IMPLIED
         y      CDATA #IMPLIED>
+
+    <!ELEMENT property EMPTY>
+    <!ATTLIST property
+        name    CDATA #REQUIRED
+        value   CDATA #REQUIRED>
+        
+    <!ELEMENT note (#PCDATA)>
 
 From this small language, quite a lot can be done.
 
@@ -858,7 +976,7 @@ The DTD for an attachment point database is:
         name    CDATA #IMPLIED
         upem    CDATA #IMPLIED
 
-    <!ELEMENT glyph (point | compound)*>
+    <!ELEMENT glyph (property* | (point | compound)* | note)>
     <!ATTLIST glyph
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
@@ -868,21 +986,28 @@ The DTD for an attachment point database is:
     <!ATTLIST point
         type    CDATA #REQUIRED>
 
-    <!ELEMENT location #EMPTY>
+    <!ELEMENT location EMPTY>
     <!ATTLIST location
         x       CDATA #REQUIRED
         y       CDATA #REQUIRED>
 
-    <!ELEMENT contour #EMPTY>
+    <!ELEMENT contour EMPTY>
     <!ATTLIST contour
         num     CDATA #REQUIRED>
 
-    <!ELEMENT compound #EMPTY>
+    <!ELEMENT compound EMPTY>
     <!ATTLIST compound
         bbox    CDATA #REQUIRED
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
         GID     CDATA #IMPLIED>
+        
+    <!ELEMENT property EMPTY>
+    <!ATTLIST property
+        name    CDATA #REQUIRED
+        value   CDATA #REQUIRED>
+        
+    <!ELEMENT note (#PCDATA)>
 
 A C<font> contains C<glyphs> which have attachment C<points>. Each point has a name
 and either a contour (path number from 0) or a location of an attachment point (real
@@ -895,6 +1020,11 @@ the component in relation to the main glyph. This is a 4 element string,
 separated by comma and optional whitespace. Each element is a co-ordinate in em
 units. The sequence of values is: C<xMin>, C<yMin>, C<xMax>, C<yMax>. The compound
 also indicates which glyph this component refers to.
+
+Each glyph may also contain properties. A property is a name value pair. There may only
+be one property with any particular name attribute.
+
+A glyph may have textual notes associated with it.
 
 =head1 Usage
 

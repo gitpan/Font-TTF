@@ -38,20 +38,35 @@ No others beyond those specified in the standard:
 =cut
 
 use strict;
-use vars qw(@ISA %fields);
+use vars qw(@ISA %fields @field_info);
 use Font::TTF::Utils;
 
 @ISA = qw(Font::TTF::Table);
+@field_info = (
+    'numGlyphs' => 'S',
+    'maxPoints' => 'S',
+    'maxContours' => 'S',
+    'maxCompositePoints' => 'S',
+    'maxCompositeContours' => 'S',
+    'maxZones' => 'S',
+    'maxTwilightPoints' => 'S',
+    'maxStorage' => 'S',
+    'maxFunctionDefs' => 'S',
+    'maxInstructionDefs' => 'S',
+    'maxStackElements' => 'S',
+    'maxSizeOfInstructions' => 'S',
+    'maxComponentElements' => 'S',
+    'maxComponentDepth' => 'S');
 
 sub init
 {
-    my ($k, $v, $c);
-    while (<Font::TTF::Maxp::DATA>)
+    my ($k, $v, $c, $i);
+    for ($i = 0; $i < $#field_info; $i += 2)
     {
-        ($k, $v, $c) = TTF_Init_Fields($_, $c);
+        ($k, $v, $c) = TTF_Init_Fields($field_info[$i], $c, $field_info[$i + 1]);
         next unless defined $k && $k ne "";
         $fields{$k} = $v;
-    }  
+    }
 }
 
 
@@ -139,7 +154,8 @@ sub update
 
     foreach ('prep', 'fpgm')
     { $m[4] = length($self->{' PARENT'}{$_}{' dat'})
-            if (length($self->{' PARENT'}{$_}{' dat'}) > $m[4]);
+            if (defined $self->{' PARENT'}{$_} 
+                && length($self->{' PARENT'}{$_}{' dat'}) > $m[4]);
     }
 
     for ($j = 0; $j <= $#name; $j++)
@@ -159,20 +175,3 @@ Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
-
-__DATA__
-numGlyphs, S
-maxPoints, S
-maxContours, S
-maxCompositePoints, S
-maxCompositeContours, S
-maxZones, S
-maxTwilightPoints, S
-maxStorage, S
-maxFunctionDefs, S
-maxInstructionDefs, S
-maxStackElements, S
-maxSizeOfInstructions, S
-maxComponentElements, S
-maxComponentDepth, S
-
