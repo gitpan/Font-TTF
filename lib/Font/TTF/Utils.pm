@@ -20,7 +20,7 @@ require Exporter;
 
 @ISA = qw(Exporter);
 @EXPORT = qw(TTF_Init_Fields TTF_Read_Fields TTF_Out_Fields TTF_Pack
-             TTF_Unpack TTF_word_utf8 TTF_utf8_word);
+             TTF_Unpack TTF_word_utf8 TTF_utf8_word TTF_bininfo);
 @EXPORT_OK = (@EXPORT, qw(XML_hexdump));
 $VERSION = 0.0001;
 
@@ -139,10 +139,10 @@ sub TTF_Unpack
             {
                 $res = unpack("n", $dat);
                 substr($dat, 0, 2) = "";
-                $res -= 65536 if $res >= 32768;
+#                $res -= 65536 if $res >= 32768;
                 $frac = $res & 0x3fff;
                 $res >>= 14;
-#                $res -= 4 if $res > 1;
+                $res -= 4 if $res > 1;
 #                $frac -= 16384 if $frac > 8191;
                 $res += $frac / 16384.;
             }

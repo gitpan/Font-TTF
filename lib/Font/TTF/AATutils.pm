@@ -1,4 +1,4 @@
-package Font::TTF::AAT::AATutils;
+package Font::TTF::AATutils;
 
 use strict;
 use vars qw(@ISA @EXPORT);

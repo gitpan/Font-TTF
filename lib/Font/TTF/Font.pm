@@ -118,7 +118,9 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.31;    # MJPH       1-JUL-2002     fix read format 12 cmap (bart@cs.pdx.edu) 
+$VERSION = 0.32;    # MJPH       2-OCT-2002     Bug fixes to TTFBuilder, new methods and some
+#                                                 extension table support in Ttopen and Coverage
+# $VERSION = 0.31;    # MJPH       1-JUL-2002     fix read format 12 cmap (bart@cs.pdx.edu) 
 #                                                 improve surrogate support in ttfremap
 #                                                 fix return warn to return warn,undef
 #                                                 ensure correct indexToLocFormat

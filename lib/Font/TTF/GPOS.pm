@@ -371,6 +371,16 @@ sub read_sub
 }
 
 
+=head2 $t->extension
+
+Returns the table type number for the extension table
+
+=cut
+
+sub extension
+{ return 9; }
+
+
 =head2 $t->out_sub
 
 Outputs the subtable to the given filehandle

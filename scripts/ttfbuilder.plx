@@ -8,7 +8,10 @@ use XML::Parser::Expat;
 use Pod::Usage;
 use Getopt::Std;
 
-$VERSION = 0.11;    # MJPH      11-JUL-2002     Error message refining
+$VERSION = 0.14;    # MJPH       2-OCT-2002     Fix scaling and component references
+# $VERSION = 0.13;    # MJPH      17-AUG-2002     Add noaps attribute, points on attachments now work
+# $VERSION = 0.12;    # MJPH      22-JUL-2002     Fix overstrike
+# $VERSION = 0.11;    # MJPH      11-JUL-2002     Error message refining
 # $VERSION = 0.10;    # MJPH      24-JUN-2002     add rsb  & lsb tags and -d 16 (overstriking disabling)
 # $VERSION = 0.09;    # MJPH      14-JUN-2002     Fix property output and bad sync in attach.xml
 # $VERSION = 0.08;    # MJPH      16-APR-2002     Change default PS names for .notdef null & CR
@@ -185,7 +188,7 @@ $xml->setHandlers('Start' => sub {
         $curbase = {%attrs};
         $xml->{' curbase'} = $curbase;
         $curbase->{'GID'} = ++$gcount unless (defined $curbase->{'GID'});
-        $gcount = $curglyph->{'GID'} if ($gcount < $curbase->{'GID'});
+        $gcount = $curbase->{'GID'} if ($gcount < $curbase->{'GID'});
         $glyphs[$curbase->{'GID'}] = $curbase;
     }
     elsif ($tag eq 'base' || $tag eq 'attach')
@@ -205,13 +208,16 @@ $xml->setHandlers('Start' => sub {
             'UID' => $attrs{'UID'}
             };
         push (@{$curbase->{'glyphs'}}, $aglyph);        # build components tree
-        
-        foreach $p (keys %{$xml_dat[$gid]{'points'}})
-        {
-            my ($p1) = $xml_dat[$gid]{'points'}{$p};
-            $aglyph->{'points'}{$p}{'base'} = $aglyph;
-            $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
-            $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
+
+        unless (defined $attrs{'noaps'})
+        {        
+            foreach $p (keys %{$xml_dat[$gid]{'points'}})
+            {
+                my ($p1) = $xml_dat[$gid]{'points'}{$p};
+                $aglyph->{'points'}{$p}{'base'} = $aglyph;
+                $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
+                $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
+            }
         }
         $aglyph->{'properties'} = {%{$xml_dat[$gid]{'properties'}}} if defined $xml_dat[$i]{'properties'};
         $aglyph->{'notes'} = $xml_dat[$gid]{'notes'} if defined $xml_dat[$i]{'notes'};
@@ -344,50 +350,43 @@ $xml->setHandlers('Start' => sub {
     }
     elsif ($tag eq 'glyph')
     {
-        my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p, $lorg);
+        my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p, $lorg, $pcount);
 
         foreach $g (@{$curbase->{'glyphs'}})
         {
-            resolve_glyph($g, $adv);                    # get absolute position of glyph
+            $pcount = resolve_glyph($g, $adv, 0, $pcount, as_bool($curbase->{'overstrike'}, ($opt_d & 16) != 16));    # get absolute position of glyph
             $adv = $g->{'offset'}[0] + $g->{'adv'};
             $lorg = $g->{'lorg'} if ($g->{'lorg'} < $lorg);
             push (@{$curbase->{'glyph_list'}}, @{$g->{'glyph_list'}});  # compile full glyph list
             if (defined $g->{'bbox'})
             { ($xMin, $yMin, $xMax, $yMax) =
                 findbox($xMin, $yMin, $xMax, $yMax, $g->{'bbox'}, $g->{'offset'}); }
-
-            foreach $p (keys %{$g->{'points'}})                 # update points database
-            {
-                if (defined $curbase->{'points'}{$p})
-                {
-                    my ($p1) = $p;
-                    while (defined $curbase->{'points'}{$p1})
-                    { $p1++; }
-                    $curbase->{'points'}{$p1} = $curbase->{'points'}{$p};       # both point to the same hash
-                }
-                $curbase->{'points'}{$p} = $g->{'points'}{$p};
-            }
+            foreach $p (keys %{$g->{'points'}})
+            { $curbase->{'points'}{$p} = $g->{'points'}{$p}; }
         }
 
-        if ((as_bool($curbase->{'overstrike'}, 1)
-             || (($opt_d & 16) && !defined $curbase->{'overstrike'}))
-            && $lorg < 0)
+        if (!as_bool($curbase->{'overstrike'}, ($opt_d & 16) != 16) && $lorg < 0)
         {
             foreach $g (@{$curbase->{'glyph_list'}})
             { $g->{'offset'}[0] -= $lorg; }
+            foreach $g (@{$curbase->{'glyphs'}})
+            { $g->{'offset'}[0] -= $lorg; }
             $adv -= $lorg;
+            $xMax -= $lorg;
+            $xMin -= $lorg;
         }
 
         if (scalar @{$curbase->{'glyph_list'}} == 1)        # only one glyph?
         {
             my ($cg) = $curbase->{'glyph_list'}[0];
 
-            if ($cg->{'offset'}[0] == 0 && $cg->{'offset'}[1] == 0)     # no move - then basis for other references
+            if ($cg->{'offset'}[0] == 0 && $cg->{'offset'}[1] == 0 && !defined $cg->{'scale'})     # no move - then basis for other references
             { $cg->{'glyph'}{'required'} = $curbase->{'GID'}; }
             else
             { $cg->{'glyph'}{'required1'} = $curbase->{'GID'}; }         # moved - perhaps a basis
         }
 
+        $curbase->{'bbox'} = [$xMin, $yMin, $xMax, $yMax];
         $of->{'hmtx'}{'advance'}[$curbase->{'GID'}] =                       # font update handles lsb
                 defined ($curbase->{'adv'}) ? $curbase->{'adv'} : $adv;     # resolve advance width here
         undef $xml->{' curbase'};
@@ -542,7 +541,14 @@ for ($i = 0; $i < $of->{'maxp'}{'numGlyphs'}; $i++)
         foreach (qw(numberOfContours xMin yMin xMax yMax), ' DAT')
         { $glyph->{$_} = $gb->{$_}; }
         $glyph->{' read'} = 1;
-        if ($cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0)
+        if ($glyph->{'numberOfContours'} < 0)
+        {
+            my ($comp);
+            $glyph->read_dat;
+            foreach $comp (@{$glyph->{'comps'}})
+            { $comp->{'glyph'} = $if->{'loca'}{'glyphs'}[$comp->{'glyph'}]{'required'}; }
+        }
+        if ($cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
         {
             $glyph->read_dat;
             if ($glyph->{'numberOfContours'} < 0)
@@ -551,20 +557,30 @@ for ($i = 0; $i < $of->{'maxp'}{'numGlyphs'}; $i++)
 
                 foreach $comp (@{$glyph->{'comps'}})
                 {
-                    if ($flag & 2)
-                    {
-                        $comp->{'args'}[0] += $cg->{'offset'}[0];
-                        $comp->{'args'}[1] += $cg->{'offset'}[1];
-                    }
+                    $comp->{'args'}[0] += $cg->{'offset'}[0];
+                    $comp->{'args'}[1] += $cg->{'offset'}[1];
+                    $comp->{'scale'} = mat_mult($cg->{'scale'}, $comp->{'scale'});
                 }
             } else
             {
-                my ($j);
-                
-                foreach $j (@{$glyph->{'x'}})
-                { $j += $cg->{'offset'}[0]; }
-                foreach $j (@{$glyph->{'y'}})
-                { $j += $cg->{'offset'}[1]; }
+                for ($j = 0; $j < scalar @{$glyph->{'x'}}; $j++)
+                {
+                    my ($x, $y) = ($glyph->{'x'}[$j], $glyph->{'y'}[$j]);
+                    
+                    if ($cg->{'scale'})
+                    {
+                        my (@m) = @{$cg->{'scale'}};
+                        if ($m[0] != 0 || $m[1] != 0 || $m[2] != 0 || $m[3] != 0)
+                        {
+                            $x = $x * $m[0] + $y * $m[1];
+                            $y = $x * $m[2] + $y * $m[3];
+                        }
+                    }
+                    
+                    $x += $cg->{'offset'}[0];
+                    $y += $cg->{'offset'}[1];
+                    ($glyph->{'x'}[$j], $glyph->{'y'}[$j]) = ($x, $y);
+                }
             }
         }
         $of->{'hmtx'}{'lsb'}[$i] -= $cg->{'offset'}[0];
@@ -575,12 +591,14 @@ for ($i = 0; $i < $of->{'maxp'}{'numGlyphs'}; $i++)
         $glyph->{'numberOfContours'} = -1;
         foreach $gb (@{$g->{'glyph_list'}})
         {
-            my ($co) = $glyphs[$gb->{'glyph'}{'required'}]{'glyph_list'}[0]{'offset'};
+            my ($co) = $glyphs[$gb->{'glyph'}{'required'}]{'glyph_list'}[0];
             
             push (@{$glyph->{'comps'}}, {
                 'glyph' => $gb->{'glyph'}{'required'},
                 'flag' => 2,
-                'args' => [$gb->{'offset'}[0] - $co->[0], $gb->{'offset'}[1] - $co->[1]]});
+#                'scale' => mat_mult($gb->{'scale'}, $co->{'scale'}),
+                'scale' => $gb->{'scale'},
+                'args' => [$gb->{'offset'}[0] - $co->{'offset'}[0], $gb->{'offset'}[1] - $co->{'offset'}[1]]});
         }
     }
     $of->{'loca'}{'glyphs'}[$i] = $glyph;
@@ -716,7 +734,7 @@ $of->out($ARGV[1]) || die "Can't write to font file $ARGV[1]. Do you have it ins
 
 sub resolve_glyph
 {
-    my ($g, $orgx, $orgy, $pathcount) = @_;
+    my ($g, $orgx, $orgy, $pathcount, $overstrike) = @_;
     my ($glyph, $xMin, $yMin, $xMax, $yMax, $c, $p, $adv, $lorg);
 
     $g->{'pathbase'} = $pathcount;
@@ -730,7 +748,7 @@ sub resolve_glyph
         $glyph->read->get_points;
         $pathcount += scalar @{$glyph->{'endPoints'}};
 
-        push (@{$g->{'glyph_list'}}, pos_glyphs($g->{'gid'}, $glyph, @{$g->{'offset'}}));
+        push (@{$g->{'glyph_list'}}, pos_glyphs($g->{'gid'}, $glyph, @{$g->{'offset'}}, $g->{'scale'}));
 
         $xMin = $glyph->{'xMin'};
         $yMin = $glyph->{'yMin'};
@@ -744,11 +762,13 @@ sub resolve_glyph
     {
         my ($lorgt);
         $pathcount = resolve_glyph($c, @{$g->{'offset'}}, $pathcount);
-        $adv = $c->{'adv'} if ($c->{'adv'} > $adv);
+        $adv = $c->{'adv'} if (!$overstrike && $c->{'adv'} > $adv);
         ($xMin, $yMin, $xMax, $yMax) = findbox($xMin, $yMin, $xMax, $yMax, $c->{'bbox'}, $c->{'offset'});
         $lorgt = $c->{'bbox'}[0] - $c->{'lsb'} + $c->{'offset'}[0];
         $lorg = $lorgt if ($lorgt < $lorg);
         push (@{$g->{'glyph_list'}}, @{$c->{'glyph_list'}});
+        foreach $p (keys %{$c->{'points'}})
+        { $g->{'points'}{$p} = $c->{'points'}{$p}; }
     }
     $g->{'bbox'} = [$xMin, $yMin, $xMax, $yMax];
     $g->{'adv'} = $adv;
@@ -758,7 +778,7 @@ sub resolve_glyph
 
 sub pos_glyphs
 {
-    my ($gid, $glyph, $orgx, $orgy) = @_;
+    my ($gid, $glyph, $orgx, $orgy, $scale) = @_;
 
     if ($glyph->{'numberOfContours'} < 0)
     {
@@ -769,7 +789,7 @@ sub pos_glyphs
             push (@res, pos_glyphs($comp->{'glyph'},
                     $if->{'loca'}{'glyphs'}[$comp->{'glyph'}],
                     $comp->{'args'}[0] + $orgx,
-                    $comp->{'args'}[1] + $orgy));
+                    $comp->{'args'}[1] + $orgy, mat_mult($scale, $comp->{'scale'})));
         }
         return @res;
     } elsif (scalar @{$glyph->{'endPoints'}} == $glyph->{'numPoints'})
@@ -777,11 +797,11 @@ sub pos_glyphs
         return ();
     } else
     {
-        $glyph->{'required'} = -1 unless (defined $glyph->{'required'} &&
-                $glyph->{'required'} >= 0);
+        $glyph->{'required'} = -1 if (!defined $glyph->{'required'});
         return ({
             'GID' => $gid,
             'offset' => [$orgx, $orgy],
+            'scale' => $scale,
             'glyph' => $glyph});
     }
 }
@@ -848,16 +868,28 @@ sub do_name
 
 sub as_bool
 {
-    my ($str, $test) = @_;
+    my ($str, $default) = @_;
     
-    if ($test)
-    { return ($str eq '1' || $str eq 'true'); }
-    elsif (!defined $test)
-    { return (!defined $str); }
+    if ($str eq '1' || $str eq 'true')
+    { return 1; }
+    elsif ($str eq '0' || $str eq 'false')
+    { return 0; }
     else
-    { return ($str eq '0' || $str eq 'false'); }
+    { return $default; }
 }
 
+sub mat_mult
+{
+    my ($a, $b) = @_;
+    
+    if (!defined $a)
+    { return $b; }
+    if (!defined $b)
+    { return $a; }
+    
+    return [$a->[0] * $b->[0] + $a->[1] * $b->[2], $a->[0] * $b->[1] + $a->[1] * $b->[3],
+            $a->[2] * $b->[0] + $a->[3] * $b->[2], $a->[2] * $b->[1] + $a->[3] * $b->[3]];
+}
 
 __END__
 
@@ -903,11 +935,15 @@ file with the following key elements:
 
 This describes a glyph and the attributes allow setting of the postscript name and
 Unicode id for the glyph. The glyph element has children which describe what goes
-into the glyph. The C<overstrike> attribute controls whether the resulting glyph
+into the glyph.
+
+The C<overstrike> attribute controls whether the resulting glyph
 can be overstriking (i.e. overlap to the left of the origin) or whether it must
 be shifted to the right of the origin. See -d 16 to override the default setting
 to disallow overstrikes. The attribute is a boolean (C<true>, C<false>, C<1>
-or C<0>).
+or C<0>). If overstrikes are allowed, the advance is calculated based on base glyphs
+only and not accounting for the space requirements of diacritics (this balances the
+lack of lsb shifting).
 
 =item base
 

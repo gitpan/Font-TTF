@@ -435,6 +435,16 @@ sub read_sub
 { }
 
 
+=head2 $t->extension()
+
+Returns the lookup number for the extension table that allows access to 32-bit offsets.
+
+=cut
+
+sub extension
+{ }
+
+
 =head2 $t->out($fh)
 
 Writes this Opentype table to the output calling $t->out_sub for each sub table
@@ -450,7 +460,7 @@ sub out
 {
     my ($self, $fh) = @_;
     my ($i, $j, $base, $off, $tag, $t, $l, $lTag, $oScript, @script, @tags);
-    my ($end, $nTags, @offs, $oFeat, $oLook, $nSub);
+    my ($end, $nTags, @offs, $oFeat, $oLook, $nSub, $nSubs, $big);
 
     return $self->SUPER::out($fh) unless $self->{' read'};
 
@@ -458,7 +468,7 @@ sub out
     $i = 0;
     foreach $t (sort grep {length($_) == 4 || m/\s_\d+$/o} %{$self->{'FEATURES'}})
     {
-        $self->{'FEATURES'}{'INDEX'} = $i++;
+        $self->{'FEATURES'}{$t}{'INDEX'} = $i++;
         push (@tags, $t);
     }
     $self->{'FEATURES'}{'FEAT_TAGS'} = \@tags;
@@ -533,20 +543,50 @@ sub out
     foreach $t (@{$self->{'FEATURES'}{'FEAT_TAGS'}})
     { $fh->print(pack("a4n", $t, $self->{'FEATURES'}{$t}{' OFFSET'})); }
 
+    undef $big;
     $fh->seek($end, 0);
     $oLook = $end - $base;
     $nTags = $#{$self->{'LOOKUP'}} + 1;
     $fh->print(pack("n", $nTags));
     $fh->print(pack("n", 0) x $nTags);
     $end = $fh->tell();
+    foreach $tag (@{$self->{'LOOKUP'}})
+    { $nSubs += $self->num_sub($tag); }
     for ($i = 0; $i < $nTags; $i++)
     {
         $fh->seek($end, 0);
         $tag = $self->{'LOOKUP'}[$i];
         $tag->{' OFFSET'} = $end - $base - $oLook;
+        if (!defined $big && $tag->{' OFFSET'} + ($nTags - $i) * 6 + $nSubs * 10 > 65535)
+        {
+            my ($k, $ext);
+            $ext = $self->extension();
+            $i--;
+            $tag = $self->{'LOOKUP'}[$i];
+            $end = $tag->{' OFFSET'} + $base + $oLook;
+            $fh->seek($end, 0);
+            $big = $i;
+            for ($j = $i; $j < $nTags; $j++)
+            {
+                $tag = $self->{'LOOKUP'}[$j];
+                $nSub = $self->num_sub($tag);
+                $fh->print(pack("nnn", $ext, $tag->{'FLAG'}, $nSub));
+                $fh->print(pack("n*", map {$_ * 8 + 6 + $nSub * 2} (1 .. $nSub)));
+                $tag->{' EXT_OFFSET'} = $fh->tell();
+                $tag->{' OFFSET'} = $tag->{' EXT_OFFSET'} - $nSub * 2 - 6 - $base - $oLook;
+                for ($k = 0; $k < $nSub; $k++)
+                { $fh->print(pack('nnN', 1, $tag->{'TYPE'}, 0)); }
+            }
+            $tag = $self->{'LOOKUP'}[$i];
+        }
         $nSub = $self->num_sub($tag);
-        $fh->print(pack("nnn", $tag->{'TYPE'}, $tag->{'FLAG'}, $nSub));
-        $fh->print(pack("n", 0) x $nSub);
+        if (!defined $big)
+        {
+            $fh->print(pack("nnn", $tag->{'TYPE'}, $tag->{'FLAG'}, $nSub));
+            $fh->print(pack("n", 0) x $nSub);
+        }
+        else
+        { $end = $tag->{' EXT_OFFSET'}; }
         @offs = ();
         for ($j = 0; $j < $nSub; $j++)
         {
@@ -554,8 +594,17 @@ sub out
             $self->out_sub($fh, $tag, $j);
         }
         $end = $fh->tell();
-        $fh->seek($tag->{' OFFSET'} + $base + $oLook + 6, 0);
-        $fh->print(pack("n*", @offs));
+        if (!defined $big)
+        {
+            $fh->seek($tag->{' OFFSET'} + $base + $oLook + 6, 0);
+            $fh->print(pack("n*", @offs));
+        }
+        else
+        {
+            $fh->seek($tag->{' EXT_OFFSET'}, 0);
+            for ($j = 0; $j < $nSub; $j++)
+            { $fh->print(pack('nnN', 1, $tag->{'TYPE'}, $offs[$j] - $j * 8)); }
+        }
     }
     $fh->seek($oLook + $base + 2, 0);
     $fh->print(pack("n*", map {$self->{'LOOKUP'}[$_]{' OFFSET'}} (0 .. $nTags - 1)));

@@ -178,6 +178,16 @@ sub read_sub
 }
 
 
+=head2 $t->extension
+
+Returns the table type number for the extension table
+
+=cut
+
+sub extension
+{ return 7; }
+
+
 =head2 $t->out_sub($fh, $lookup, $index)
 
 Passed the filehandle to output to, suitably positioned, the lookup and subtable

@@ -562,7 +562,8 @@ sub update
                 if ($comp->{'scale'}[1] == 0 && $comp->{'scale'}[2] == 0)
                 {
                     if ($comp->{'scale'}[0] == $comp->{'scale'}[3])
-                    { $flag |= 8 unless ($comp->{'scale'}[0] == 0); }
+                    { $flag |= 8 unless ($comp->{'scale'}[0] == 0
+                                    || abs(abs($comp->{'scale'}[0]) - 1.) < .001); }
                     else
                     { $flag |= 64; }
                 } else

@@ -26,23 +26,39 @@ A hash of glyph ids against values (either coverage index or class value)
 The storage format used is given here, but is recalculated when the table
 is written out.
 
+=item count
+
+A count of the elements in a coverage table for use with add. Each subsequent
+addition is added with the current count and increments the count.
+
 =head1 METHODS
 
 =cut
 
-=head2 new($isCover)
+=head2 new($isCover [, vals])
 
 Creates a new coverage table or class definition table, depending upon the
-value of $isCover
+value of $isCover. if $isCover then vals may be a list of glyphs to include in order.
+If no $isCover, then vals is a hash of glyphs against class values.
 
 =cut
 
 sub new
 {
-    my ($class, $isCover) = @_;
+    my ($class) = shift;
+    my ($isCover) = shift;
     my ($self) = {};
 
     $self->{'cover'} = $isCover;
+    $self->{'count'} = 0;
+    if ($isCover)
+    {
+        my ($v);
+        foreach $v (@_)
+        { $self->{'val'}{$v} = $self->{'count'}++; }
+    }
+    else
+    { $self->{'val'} = {@_}; }
     bless $self, $class;
 }
 
@@ -131,7 +147,7 @@ sub out
     if ($fmt == 1 && $self->{'cover'})
     {
         my ($last) = 0;
-        &$shipout(pack('n2', 1, $self->{'val'}{$gids[-1]} + 1));
+        &$shipout(pack('n2', 1, scalar @gids));
         &$shipout(pack('n*', @gids));
     } elsif ($fmt == 1)
     {
@@ -182,6 +198,23 @@ sub out
         }
     }
     return ($state ? $out : $self);
+}
+
+
+=head2 $c->add($glyphid)
+
+Adds a glyph id to the coverage table incrementing the count so that each subsequent addition
+has the next sequential number. Returns the index number of the glyphid added
+
+=cut
+
+sub add
+{
+    my ($self, $gid) = @_;
+    
+    return $self->{'val'}{$gid} if (defined $self->{'val'}{$gid});
+    $self->{'val'}{$gid} = $self->{'count'};
+    return $self->{'count'}++;
 }
 
 
