@@ -315,7 +315,7 @@ sub read
     	{
     	    if ($tag =~ m/(.*?)\s_(\d+)$/o)
     	    { $tag = $1 . " _" . ($2 + 1); }
-    	    elsef
+    	    else
     	    { $tag .= " _0"; }
     	}
 	    $l->{$tag}{' OFFSET'} = $off + $oFeat;
@@ -385,7 +385,7 @@ sub read
        	    next unless $l->{$tag}{$lTag}{' REFTAG'};
     	    $temp = $l->{$tag}{$lTag}{' REFTAG'};
     	    $l->{$tag}{$lTag} = &copy($l->{$tag}{$temp});
-    	    $l->{$tag}{' REFTAG'} = $temp;
+    	    $l->{$tag}{$lTag}{' REFTAG'} = $temp;
     	}
     }
     foreach $tag (keys %$l)
@@ -466,12 +466,10 @@ sub out
 
 # First sort the features
     $i = 0;
-    foreach $t (sort grep {length($_) == 4 || m/\s_\d+$/o} %{$self->{'FEATURES'}})
-    {
-        $self->{'FEATURES'}{$t}{'INDEX'} = $i++;
-        push (@tags, $t);
-    }
-    $self->{'FEATURES'}{'FEAT_TAGS'} = \@tags;
+    $self->{'FEATURES'}{'FEAT_TAGS'} = [sort grep {length($_) == 4 || m/\s_\d+$/o} %{$self->{'FEATURES'}}]
+            if (!defined $self->{'FEATURES'}{'FEAT_TAGS'});
+    foreach $t (@{$self->{'FEATURES'}{'FEAT_TAGS'}})
+    { $self->{'FEATURES'}{$t}{'INDEX'} = $i++; }
 
     $base = $fh->tell();
     $fh->print(TTF_Pack("f", $self->{'Version'}));
@@ -494,11 +492,16 @@ sub out
     	{ $fh->print(pack("a4n", $lTag, 0)); }
     	foreach $lTag (@{$tag->{'LANG_TAGS'}}, 'DEFAULT')
     	{
+    	    my ($def);
     	    $l = $tag->{$lTag};
     	    next if (!defined $l || $l->{' REFTAG'} ne '');
     	    $l->{' OFFSET'} = tell($fh) - $base - $oScript - $tag->{' OFFSET'};
-    	    $fh->print(pack("n*", $l->{'RE_ORDER'}, defined $l->{'DEFAULT'} ? $l->{'DEFAULT'} : -1,
-    	            $#{$l->{'FEATURES'}} + 1,
+    	    if (defined $l->{'DEFAULT'})
+#    	    { $def = $self->{'FEATURES'}{$l->{'FEATURES'}[$l->{'DEFAULT'}]}{'INDEX'}; }
+            { $def = $l->{'DEFAULT'}; }
+    	    else
+    	    { $def = -1; }
+    	    $fh->print(pack("n*", $l->{'RE_ORDER'}, $def, $#{$l->{'FEATURES'}} + 1,
     	            map {$self->{'FEATURES'}{$_}{'INDEX'}} @{$l->{'FEATURES'}}));
     	}
     	$end = $fh->tell();

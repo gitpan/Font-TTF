@@ -50,9 +50,9 @@ AR_STATIC_ARGS = cr
 NAME = Font::TTF
 DISTNAME = Font-TTF
 NAME_SYM = Font_TTF
-VERSION = 0.32
-VERSION_SYM = 0_32
-XS_VERSION = 0.32
+VERSION = 0.34
+VERSION_SYM = 0_34
+XS_VERSION = 0.34
 INST_BIN = blib\bin
 INST_EXE = blib\script
 INST_LIB = blib\lib
@@ -284,10 +284,10 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\Kern\OrderedList.pm \
 	lib/Font/TTF/Kern/StateTable.pm \
 	$(INST_LIB)\Font\TTF\Kern\StateTable.pm \
-	lib/Font/TTF/XMLparse.pm \
-	$(INST_LIB)\Font\TTF\XMLparse.pm \
 	lib/Font/TTF/Fdsc.pm \
 	$(INST_LIB)\Font\TTF\Fdsc.pm \
+	lib/Font/TTF/XMLparse.pm \
+	$(INST_LIB)\Font\TTF\XMLparse.pm \
 	lib/Font/TTF/OldCmap.pm \
 	$(INST_LIB)\Font\TTF\OldCmap.pm \
 	lib/Font/TTF/Table.pm \
@@ -298,12 +298,12 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\Mort\Ligature.pm \
 	lib/Font/TTF/GSUB.pm \
 	$(INST_LIB)\Font\TTF\GSUB.pm \
-	lib/Font/TTF/Coverage.pm \
-	$(INST_LIB)\Font\TTF\Coverage.pm \
 	lib/Font/TTF/Hdmx.pm \
 	$(INST_LIB)\Font\TTF\Hdmx.pm \
 	lib/Font/TTF/AATKern.pm \
 	$(INST_LIB)\Font\TTF\AATKern.pm \
+	lib/Font/TTF/Coverage.pm \
+	$(INST_LIB)\Font\TTF\Coverage.pm \
 	lib/Font/TTF/Prep.pm \
 	$(INST_LIB)\Font\TTF\Prep.pm \
 	lib/Font/TTF/Mort/Insertion.pm \
@@ -647,12 +647,12 @@ realclean purge ::  clean
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Prop.pm $(INST_LIB)\Font\TTF\LTSH.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Subtable.pm $(INST_LIB)\Font\TTF\Hmtx.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\AATutils.pm $(INST_LIB)\Font\TTF\Kern\OrderedList.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Kern\StateTable.pm $(INST_LIB)\Font\TTF\XMLparse.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Fdsc.pm $(INST_LIB)\Font\TTF\OldCmap.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Kern\StateTable.pm $(INST_LIB)\Font\TTF\Fdsc.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\XMLparse.pm $(INST_LIB)\Font\TTF\OldCmap.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Table.pm $(INST_LIB)\Font\TTF\Glyf.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Ligature.pm $(INST_LIB)\Font\TTF\GSUB.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Coverage.pm $(INST_LIB)\Font\TTF\Hdmx.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\AATKern.pm $(INST_LIB)\Font\TTF\Prep.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Hdmx.pm $(INST_LIB)\Font\TTF\AATKern.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Coverage.pm $(INST_LIB)\Font\TTF\Prep.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Insertion.pm $(INST_LIB)\Font\TTF\Mort\Contextual.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\GDEF.pm $(INST_LIB)\Font\TTF\PSNames.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Font.pm $(INST_LIB)\Font\TTF\Feat.pm $(INST_LIB)\ttfmod.pl
@@ -900,7 +900,7 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd:
-	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,32,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
+	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,34,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
 
 # --- MakeMaker pm_to_blib section:
 

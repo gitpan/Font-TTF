@@ -99,7 +99,7 @@ use Font::TTF::Ttopen;
 use vars qw(@ISA $new_gdef);
 
 @ISA = qw(Font::TTF::Table);
-
+$new_gdef = 1;
 
 =head2 $t->read
 

@@ -8,7 +8,10 @@ use XML::Parser::Expat;
 use Pod::Usage;
 use Getopt::Std;
 
-$VERSION = 0.14;    # MJPH       2-OCT-2002     Fix scaling and component references
+$VERSION = 0.17;    # MJPH      28-MAR-2003     Fix property copying
+# $VERSION = 0.16;    # MJPH       1-FEB-2003     Fix surrogates
+# $VERSION = 0.15;    # MJPH       3-OCT-2002     Allow overstrike="right" etc.
+# $VERSION = 0.14;    # MJPH       2-OCT-2002     Fix scaling and component references
 # $VERSION = 0.13;    # MJPH      17-AUG-2002     Add noaps attribute, points on attachments now work
 # $VERSION = 0.12;    # MJPH      22-JUL-2002     Fix overstrike
 # $VERSION = 0.11;    # MJPH      11-JUL-2002     Error message refining
@@ -44,7 +47,8 @@ attachment point database (attach.xml) and can generate out.xml.
                 1: Don't Auto-create postscript names for component glyphs
                 2: Don't Hack the copyright message (if none set)
                 3: Mark target font as symbol font
-                4: Default to not allowing overstrikes (ensures guard space)
+                4: Default to not allowing overstrikes (ensures guard space) on lhs
+                5: Default to not allowing overstriking on rhs
     -h          Help
     -x file     Attachment database to read
     -z file     Attachment database to output
@@ -219,8 +223,8 @@ $xml->setHandlers('Start' => sub {
                 $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
             }
         }
-        $aglyph->{'properties'} = {%{$xml_dat[$gid]{'properties'}}} if defined $xml_dat[$i]{'properties'};
-        $aglyph->{'notes'} = $xml_dat[$gid]{'notes'} if defined $xml_dat[$i]{'notes'};
+        $aglyph->{'properties'} = {%{$xml_dat[$gid]{'properties'}}} if defined $xml_dat[$gid]{'properties'};
+        $aglyph->{'notes'} = $xml_dat[$gid]{'notes'} if defined $xml_dat[$gid]{'notes'};
 
         if ($tag eq 'attach')                            # position attachment
         {
@@ -354,7 +358,7 @@ $xml->setHandlers('Start' => sub {
 
         foreach $g (@{$curbase->{'glyphs'}})
         {
-            $pcount = resolve_glyph($g, $adv, 0, $pcount, as_bool($curbase->{'overstrike'}, ($opt_d & 16) != 16));    # get absolute position of glyph
+            $pcount = resolve_glyph($g, $adv, 0, $pcount, !(over_asnum($curbase->{'overstrike'}, ($opt_d & 32) >> 4) & 2));    # get absolute position of glyph
             $adv = $g->{'offset'}[0] + $g->{'adv'};
             $lorg = $g->{'lorg'} if ($g->{'lorg'} < $lorg);
             push (@{$curbase->{'glyph_list'}}, @{$g->{'glyph_list'}});  # compile full glyph list
@@ -365,7 +369,7 @@ $xml->setHandlers('Start' => sub {
             { $curbase->{'points'}{$p} = $g->{'points'}{$p}; }
         }
 
-        if (!as_bool($curbase->{'overstrike'}, ($opt_d & 16) != 16) && $lorg < 0)
+        if ((over_asnum($curbase->{'overstrike'}, ($opt_d & 16) >> 4) & 1) && $lorg < 0)
         {
             foreach $g (@{$curbase->{'glyph_list'}})
             { $g->{'offset'}[0] -= $lorg; }
@@ -527,82 +531,84 @@ for ($i = 0; $i < $of->{'maxp'}{'numGlyphs'}; $i++)
     { $pname = Font::TTF::PSNames::lookup($uid); }
     $of->{'post'}{'VAL'}[$i] = $pname;
 
-    next unless (scalar @{$g->{'glyph_list'}});
-
-    $glyph = Font::TTF::Glyph->new(PARENT => $of, read => 2);
-    $glyph->{'xMin'} = $g->{'bbox'}[0];
-    $glyph->{'yMin'} = $g->{'bbox'}[1];
-    $glyph->{'xMax'} = $g->{'bbox'}[2];
-    $glyph->{'yMax'} = $g->{'bbox'}[3];
-    if (scalar @{$g->{'glyph_list'}} == 1)
+    if (scalar @{$g->{'glyph_list'}})
     {
-        my ($cg) = $g->{'glyph_list'}[0];
-        my ($gb) = $cg->{'glyph'};
-        foreach (qw(numberOfContours xMin yMin xMax yMax), ' DAT')
-        { $glyph->{$_} = $gb->{$_}; }
-        $glyph->{' read'} = 1;
-        if ($glyph->{'numberOfContours'} < 0)
+    
+        $glyph = Font::TTF::Glyph->new(PARENT => $of, read => 2);
+        $glyph->{'xMin'} = $g->{'bbox'}[0];
+        $glyph->{'yMin'} = $g->{'bbox'}[1];
+        $glyph->{'xMax'} = $g->{'bbox'}[2];
+        $glyph->{'yMax'} = $g->{'bbox'}[3];
+        if (scalar @{$g->{'glyph_list'}} == 1)
         {
-            my ($comp);
-            $glyph->read_dat;
-            foreach $comp (@{$glyph->{'comps'}})
-            { $comp->{'glyph'} = $if->{'loca'}{'glyphs'}[$comp->{'glyph'}]{'required'}; }
-        }
-        if ($cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
-        {
-            $glyph->read_dat;
+            my ($cg) = $g->{'glyph_list'}[0];
+            my ($gb) = $cg->{'glyph'};
+            foreach (qw(numberOfContours xMin yMin xMax yMax), ' DAT')
+            { $glyph->{$_} = $gb->{$_}; }
+            $glyph->{' read'} = 1;
             if ($glyph->{'numberOfContours'} < 0)
             {
                 my ($comp);
-
+                $glyph->read_dat;
                 foreach $comp (@{$glyph->{'comps'}})
-                {
-                    $comp->{'args'}[0] += $cg->{'offset'}[0];
-                    $comp->{'args'}[1] += $cg->{'offset'}[1];
-                    $comp->{'scale'} = mat_mult($cg->{'scale'}, $comp->{'scale'});
-                }
-            } else
+                { $comp->{'glyph'} = $if->{'loca'}{'glyphs'}[$comp->{'glyph'}]{'required'}; }
+            }
+            if ($cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
             {
-                for ($j = 0; $j < scalar @{$glyph->{'x'}}; $j++)
+                $glyph->read_dat;
+                if ($glyph->{'numberOfContours'} < 0)
                 {
-                    my ($x, $y) = ($glyph->{'x'}[$j], $glyph->{'y'}[$j]);
-                    
-                    if ($cg->{'scale'})
+                    my ($comp);
+    
+                    foreach $comp (@{$glyph->{'comps'}})
                     {
-                        my (@m) = @{$cg->{'scale'}};
-                        if ($m[0] != 0 || $m[1] != 0 || $m[2] != 0 || $m[3] != 0)
-                        {
-                            $x = $x * $m[0] + $y * $m[1];
-                            $y = $x * $m[2] + $y * $m[3];
-                        }
+                        $comp->{'args'}[0] += $cg->{'offset'}[0];
+                        $comp->{'args'}[1] += $cg->{'offset'}[1];
+                        $comp->{'scale'} = mat_mult($cg->{'scale'}, $comp->{'scale'});
                     }
-                    
-                    $x += $cg->{'offset'}[0];
-                    $y += $cg->{'offset'}[1];
-                    ($glyph->{'x'}[$j], $glyph->{'y'}[$j]) = ($x, $y);
+                } else
+                {
+                    for ($j = 0; $j < scalar @{$glyph->{'x'}}; $j++)
+                    {
+                        my ($x, $y) = ($glyph->{'x'}[$j], $glyph->{'y'}[$j]);
+                        
+                        if ($cg->{'scale'})
+                        {
+                            my (@m) = @{$cg->{'scale'}};
+                            if ($m[0] != 0 || $m[1] != 0 || $m[2] != 0 || $m[3] != 0)
+                            {
+                                $x = $x * $m[0] + $y * $m[1];
+                                $y = $x * $m[2] + $y * $m[3];
+                            }
+                        }
+                        
+                        $x += $cg->{'offset'}[0];
+                        $y += $cg->{'offset'}[1];
+                        ($glyph->{'x'}[$j], $glyph->{'y'}[$j]) = ($x, $y);
+                    }
                 }
             }
-        }
-        $of->{'hmtx'}{'lsb'}[$i] -= $cg->{'offset'}[0];
-    } else
-    {
-        my ($gb);
-        
-        $glyph->{'numberOfContours'} = -1;
-        foreach $gb (@{$g->{'glyph_list'}})
+            $of->{'hmtx'}{'lsb'}[$i] -= $cg->{'offset'}[0];
+        } else
         {
-            my ($co) = $glyphs[$gb->{'glyph'}{'required'}]{'glyph_list'}[0];
+            my ($gb);
             
-            push (@{$glyph->{'comps'}}, {
-                'glyph' => $gb->{'glyph'}{'required'},
-                'flag' => 2,
-#                'scale' => mat_mult($gb->{'scale'}, $co->{'scale'}),
-                'scale' => $gb->{'scale'},
-                'args' => [$gb->{'offset'}[0] - $co->{'offset'}[0], $gb->{'offset'}[1] - $co->{'offset'}[1]]});
+            $glyph->{'numberOfContours'} = -1;
+            foreach $gb (@{$g->{'glyph_list'}})
+            {
+                my ($co) = $glyphs[$gb->{'glyph'}{'required'}]{'glyph_list'}[0];
+                
+                push (@{$glyph->{'comps'}}, {
+                    'glyph' => $gb->{'glyph'}{'required'},
+                    'flag' => 2,
+    #                'scale' => mat_mult($gb->{'scale'}, $co->{'scale'}),
+                    'scale' => $gb->{'scale'},
+                    'args' => [$gb->{'offset'}[0] - $co->{'offset'}[0], $gb->{'offset'}[1] - $co->{'offset'}[1]]});
+            }
         }
+        $of->{'loca'}{'glyphs'}[$i] = $glyph;
     }
-    $of->{'loca'}{'glyphs'}[$i] = $glyph;
-
+    
     next unless defined $opt_z;
     print OX "\n<glyph GID=\"$i\"";
     print OX " PSName=\"$pname\"" if ($pname ne '.notdef');
@@ -688,15 +694,13 @@ if ($uidmax > 0xFFFF)       # also include a BMP cmap
     my ($k);
     
     foreach $k (keys %{$oc})
-    {
-        $bmpc{$k} = $oc->{$k} if ($k <= 0xFFFF);
-    }
+    { $bmpc{$k} = $oc->{$k} if ($k <= 0xFFFF); }
     push (@{$of->{'cmap'}{'Tables'}}, {
         'Platform' => 3,
         'Encoding' => ($opt_d & 8 ? 0 : 1),
-        'Format' => $4,
+        'Format' => 4,
         'Ver' => 0,
-        'val' => $bmpc});
+        'val' => \%bmpc});
 }
 
 $of->{'cmap'}{'Num'} = scalar @{$of->{'cmap'}{'Tables'}};
@@ -878,6 +882,22 @@ sub as_bool
     { return $default; }
 }
 
+sub over_asnum
+{
+    my ($str, $default) = @_;
+    
+    if ($str eq '1' || $str eq 'true' || $str eq 'both')
+    { return 3; }
+    elsif ($str eq 'left')
+    { return 1; }
+    elsif ($str eq 'right')
+    { return 2; }
+    elsif ($str eq '0' || $str eq 'false' || $str eq 'none')
+    { return 0; }
+    else
+    { return $default; }
+}
+
 sub mat_mult
 {
     my ($a, $b) = @_;
@@ -937,13 +957,18 @@ This describes a glyph and the attributes allow setting of the postscript name a
 Unicode id for the glyph. The glyph element has children which describe what goes
 into the glyph.
 
-The C<overstrike> attribute controls whether the resulting glyph
-can be overstriking (i.e. overlap to the left of the origin) or whether it must
-be shifted to the right of the origin. See -d 16 to override the default setting
-to disallow overstrikes. The attribute is a boolean (C<true>, C<false>, C<1>
-or C<0>). If overstrikes are allowed, the advance is calculated based on base glyphs
-only and not accounting for the space requirements of diacritics (this balances the
-lack of lsb shifting).
+The C<overstrike> attribute controls whether an attachment to a base glyph can extend
+beyond origin or the advance width of the base glyph. The default is to allow the
+diacritics to extend and even occur to the left of the origin or to the right of the
+advance. if C<overstrike> is set to C<left> for a glyph, then any diacritics may not
+extend to the left of the origin and the glyph will be shifted right to ensure this, 
+if necessary. Likewise if C<overstrike> is set to C<right> then the advance will be
+increased to ensure that a diacritic does not extend beyond the advance width. values
+of C<true> or C<1> or C<both> or C<all> guard both sides of the glyph.
+
+The default action for all glyphs is not to guard. This can be changed using the -d
+option with 16 setting the default C<left> value and 32 setting the default C<right>
+value.
 
 =item base
 
@@ -1012,7 +1037,9 @@ Various font attributes can be set from a TTFBuilder configuration file:
     linegap     how much space to put between lines
     cp          OS/2 codepages field (in binary)
     coverage    OS/2 Unicode block coverage (in binary)
-    
+
+Binary values are written in hex (as in: 0003)
+
 =back
 
 The DTD for the configuration file is:
@@ -1036,20 +1063,20 @@ The DTD for the configuration file is:
 
     <!ELEMENT glyphs (glyph)+>
 
-    <!ELEMENT glyph (property* | note | (advance | base)+)>
+    <!ELEMENT glyph (property* | note? | (advance | rsb | lsb)+ | base)+>
     <!ATTLIST glyph
         PSNAme      CDATA #IMPLIED
         UID         CDATA #IMPLIED
         GID         CDATA #IMPLIED
-        overstrike  CDATA #IMPLIED>
+        overstrike  (0 | false | none | 1 | true | all | both | left | right)  #IMPLIED>
 
-    <!ELEMENT base (advance | attach | shift)*>
+    <!ELEMENT base (advance | rsb | lsb | attach | shift)*>
     <!ATTLIST base
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
         GID     CDATA #IMPLIED>
 
-    <!ELEMENT attach (advance | shift)*>
+    <!ELEMENT attach (advance | rsb | lsb | shift)*>
     <!ATTLIST attach
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
@@ -1063,6 +1090,10 @@ The DTD for the configuration file is:
 
     <!ELEMENT rsb EMPTY>
     <!ATTLIST rsb
+        width   CDATA #REQUIRED>
+
+    <!ELEMENT lsb EMPTY>
+    <!ATTLIST lsb
         width   CDATA #REQUIRED>
 
     <!ELEMENT shift EMPTY>

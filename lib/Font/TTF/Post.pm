@@ -140,7 +140,7 @@ sub read
         for ($i = 0; $i < 258; $i++)
         {
             $self->{'VAL'}[$i] = $base_set[$i];
-            $self->{'STRINGS'}{$base_set[$i]} = $i;
+            $self->{'STRINGS'}{$base_set[$i]} = $i unless (defined $self->{'STRINGS'}{$base_set[$i]});
         }
     } elsif (int($self->{'FormatType'} * 2 + .1) == 5)
     {
@@ -151,7 +151,7 @@ sub read
         {
             $off = unpack("c", substr($dat, $i, 1));
             $self->{'VAL'}[$i] = $base_set[$i + $off];
-            $self->{'STRINGS'}{$base_set[$i + $off]} = $i;
+            $self->{'STRINGS'}{$base_set[$i + $off]} = $i unless (defined $self->{'STRINGS'}{$base_set[$i + $off]});
         }
     } elsif (int($self->{'FormatType'} + .5) == 2)
     {
@@ -181,7 +181,7 @@ sub read
             else
             {
                 $self->{'VAL'}[$i] = $base_set[$off];
-                $self->{'STRINGS'}{$base_set[$off]} = $i;
+                $self->{'STRINGS'}{$base_set[$off]} = $i unless (defined $self->{'STRINGS'}{$base_set[$off]});
             }
         }
     }

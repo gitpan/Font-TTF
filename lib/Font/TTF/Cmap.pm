@@ -221,7 +221,7 @@ sub find_ms
         } elsif ($s->{'Platform'} == 0 || ($s->{'Platform'} == 2 && $s->{'Encoding'} == 1))
         { $alt = $s; }
     }
-    $self->{' mstable'} = $alt unless $found;
+    $self->{' mstable'} = $alt if ($alt && !$found);
     $self->{' mstable'};
 }
 
@@ -262,6 +262,12 @@ sub out
     my ($loc, $s, $i, $base_loc, $j, @keys);
 
     return $self->SUPER::out($fh) unless $self->{' read'};
+
+
+    $self->{'Tables'} = [sort {$a->{'Platform'} <=> $b->{'Platform'}
+                                || $a->{'Encoding'} <=> $b->{'Encoding'}
+                                || $a->{'Ver'} <=> $b->{'Ver'}} @{$self->{'Tables'}}];
+    $self->{'Num'} = scalar @{$self->{'Tables'}};
 
     $base_loc = $fh->tell();
     $fh->print(pack("n2", 0, $self->{'Num'}));
@@ -360,10 +366,13 @@ sub out
                 }
                 if ($j != $current + 1 || $s->{'val'}{$j} != $curr_glyf + 1)
                 {
-                    push (@jobs, [$start, $current, $curr_glyf]) if (defined $start);
+                    push (@jobs, [$start, $current, $curr_glyf - ($current - $start)]) if (defined $start);
                     $start = $j; $current = $j; $curr_glyf = $s->{'val'}{$j};
                 }
+                $current = $j;
+                $curr_glyf = $s->{'val'}{$j};
             }
+            push (@jobs, [$start, $current, $curr_glyf - ($current - $start)]) if (defined $start);
             $fh->print($map) if ($s->{'Format'} == 8);
             $fh->print(pack('N', $#jobs + 1));
             foreach $j (@jobs)

@@ -118,7 +118,9 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.32;    # MJPH       2-OCT-2002     Bug fixes to TTFBuilder, new methods and some
+$VERSION = 0.34;    # MJPH      22-MAY-2003     Update PSNames to latest AGL
+# $VERSION = 0.33;    # MJPH       9-OCT-2002     Support CFF OpenType (just by version=='OTTO'?!)
+# $VERSION = 0.32;    # MJPH       2-OCT-2002     Bug fixes to TTFBuilder, new methods and some
 #                                                 extension table support in Ttopen and Coverage
 # $VERSION = 0.31;    # MJPH       1-JUL-2002     fix read format 12 cmap (bart@cs.pdx.edu) 
 #                                                 improve surrogate support in ttfremap
@@ -313,7 +315,7 @@ sub read
     $fh->seek($self->{' OFFSET'}, 0);
     $fh->read($dat, 12);
     ($ver, $dir_num) = unpack("Nn", $dat);
-    $ver == 1 << 16 || $ver == 0x74727565 or return undef;  # support Mac sfnts
+    $ver == 1 << 16 || $ver == unpack('N', 'OTTO') || $ver == 0x74727565 or return undef;  # support Mac sfnts
     
     for ($i = 0; $i < $dir_num; $i++)
     {
