@@ -756,7 +756,31 @@ sub get_points
     $self->{'numPoints'} = $nump;
     $self;
 }
-        
+
+
+=head2 $g->get_refs
+
+Returns an array of all the glyph ids that are used to make up this glyph. That
+is all the compounds and their references and so on. If this glyph is not a
+compound, then returns an empty array
+
+=cut
+
+sub get_refs
+{
+    my ($self) = @_;
+    my (@res, $g);
+
+    $self->read_dat;
+    return unless ($self->{'numberOfContours'} < 0);
+    foreach $g (@{$self->{'comps'}})
+    {
+        my (@list) = $self->{' PARENT'}{'loca'}{'glyphs'}[$g->{'glyph'}]->get_points;
+        push (@res, $g->{'glyph'});
+        push (@res, @list) if ($list[0]);
+    }
+    return @res;
+}
 
 1;
 

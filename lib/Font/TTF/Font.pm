@@ -67,6 +67,17 @@ defaults to L<Font::TTF::Table>. The current tables which are supported are:
     vhea        Font::TTF::Vhea
     vmtx        Font::TTF::Vmtx
 
+Links are:
+
+L<Font::TTF::Table> L<Font::TTF::GDEF> L<Font::TTF::GPOS> L<Font::TTF::GSUB> L<Font::TTF::LTSH>
+L<Font::TTF::OS_2> L<Font::TTF::PCLT> L<Font::TTF::Bsln> L<Font::TTF::Cmap> L<Font::TTF::Cvt_>
+L<Font::TTF::Fdsc> L<Font::TTF::Feat> L<Font::TTF::Fmtx> L<Font::TTF::Fpgm> L<Font::TTF::Glyf>
+L<Font::TTF::Hdmx> L<Font::TTF::Head> L<Font::TTF::Hhea> L<Font::TTF::Hmtx> L<Font::TTF::Kern>
+L<Font::TTF::Loca> L<Font::TTF::Maxp> L<Font::TTF::Mort> L<Font::TTF::Name> L<Font::TTF::Post>
+L<Font::TTF::Prep> L<Font::TTF::Prop> L<Font::TTF::Vhea> L<Font::TTF::Vmtx> L<Font::TTF::OldCmap>
+L<Font::TTF::Glyph> L<Font::TTF::AATKern> L<Font::TTF::OldMort>
+
+
 =head1 INSTANCE VARIABLES
 
 Instance variables begin with a space (and have lengths greater than the 4
@@ -102,12 +113,13 @@ font directory, thus providing support for TrueType Collections.
 use IO::File;
 
 use strict;
-use vars qw(%tables $VERSION);
+use vars qw(%tables $VERSION $dumper);
 use Symbol();
 
 require 5.004;
 
-$VERSION = 0.22;    # MJPH      09-APR-2001     Ensure all of AAT stuff included
+$VERSION = 0.23;    # GST       30-MAY-2001     Memory leak fixed
+# $VERSION = 0.22;    # MJPH      09-APR-2001     Ensure all of AAT stuff included
 # $VERSION = 0.21;    # MJPH      23-MAR-2001     Improve Opentype support
 # $VERSION = 0.20;    # MJPH      13-JAN-2001     Add XML output and some of XML input, AAT & OT tables
 # $VERSION = 0.19;    # MJPH      29-SEP-2000     Add cmap::is_unicode, debug makefile.pl
@@ -162,6 +174,27 @@ $VERSION = 0.22;    # MJPH      09-APR-2001     Ensure all of AAT stuff included
         'vmtx' => 'Font::TTF::Vmtx',
           );
 
+# This is special code because I am fed up of every time I x a table in the debugger
+# I get the whole font printed. Thus substitutes my 3 line change to dumpvar into
+# the debugger. Clunky, but nice. You are welcome to a copy if you want one.
+          
+BEGIN {
+    my ($p);
+
+    foreach $p (@INC)
+    {
+        if (-f "$p/mydumpvar.pl")
+        {
+            $dumper = 'mydumpvar.pl';
+            last;
+        }
+    }
+    $dumper ||= 'dumpvar.pl';
+}
+
+sub main::dumpValue
+{ do $dumper; &main::dumpValue; }
+    
 
 =head2 Font::TTF::Font->AddTable($tablename, $class)
 
@@ -465,7 +498,7 @@ sub out_xml
     } else
     { $fh = $fname; }
 
-    unless (defined @tlist)
+    unless (scalar @tlist > 0)
     {
         @tlist = sort keys %$self;
         @tlist = grep(length($_) == 4 && defined $self->{$_}, @tlist);
@@ -577,19 +610,87 @@ sub tables_do
 }
 
 
-=head2 $f->DESTROY
+=head2 $f->release
 
-Closes the file for this font, if this is not an embedded font
+Releases ALL of the memory used by the TTF font and all of its component
+objects.  After calling this method, do B<NOT> expect to have anything left in
+the C<Font::TTF::Font> object.
+
+B<NOTE>, that it is important that you call this method on any
+C<Font::TTF::Font> object when you wish to destruct it and free up its memory.
+Internally, we track things in a structure that can result in circular
+references, and without calling 'C<release()>' these will not properly get
+cleaned up by Perl.  Once you've called this method, though, don't expect to be
+able to do anything else with the C<Font::TTF::Font> object; it'll have B<no>
+internal state whatsoever.
+
+B<Developer note:> As part of the brute-force cleanup done here, this method
+will throw a warning message whenever unexpected key values are found within
+the C<Font::TTF::Font> object.  This is done to help ensure that any unexpected
+and unfreed values are brought to your attention so that you can bug us to keep
+the module updated properly; otherwise the potential for memory leaks due to
+dangling circular references will exist.  
 
 =cut
 
-sub DESTROY
+sub release
 {
     my ($self) = @_;
-    return $self if defined $self->{' PARENT'};         # part of a TTC
-    close ($self->{' INFILE'});
-    $self = {};                 # this should DESTROY them, breaking the link on us
-    return undef;
+
+    ###########################################################################
+    # Go through our list of keys and clean things up as needed:
+    # - All scalar values get deleted explicitly, to free up their memory.
+    #   This is generally handled well by Perl, but our checks later on require
+    #   that we free them up explicitly.
+    # - All 'Font::TTF::*' elements get explicitly destructed, to free up all
+    #   of their memory and break potential circular references.
+    # - All 'IO::File' objects get silently destructed; we know there are a few
+    #   and rather than name them all explicitly, we'll just clean them up here
+    #   by type.
+    ###########################################################################
+    # NOTE: The checks below have been ordered such that the most commonly
+    #       occurring items get checked for and cleaned out first.
+    ###########################################################################
+    # FURTHER NOTE: Reducing the checks below to the least amount of checks
+    #               possible did not create any noticable performance
+    #               improvement.
+    ###########################################################################
+    foreach my $key (keys %{$self})
+    {
+        my $ref = ref($self->{$key});
+        if ($ref =~ /^Font::TTF::/o)
+        {
+            # Sub-element, explicitly destruct.
+            my $val = $self->{$key};
+            delete $self->{$key};
+            $val->release();
+        }
+        elsif ($ref eq '')
+        {
+            # Remove scalar value.
+            delete $self->{$key};
+        }
+        elsif ($ref eq 'IO::File')
+        {
+            # IO object, destruct silently.
+            delete $self->{$key};
+        }
+    }
+
+    ###########################################################################
+    # Now that we think that we've gone back and freed up all of the memory
+    # that we were using, check to make sure that we don't have any keys left
+    # in our own hash (we shouldn't).  IF we do have keys left, throw a warning
+    # message.
+    ###########################################################################
+    foreach my $key (keys %{$self})
+    {
+        warn ref($self) . " still has '$key' key left after release.\n";
+    }
+
+    ###########################################################################
+    # All done cleaning up.
+    ###########################################################################
 }
 
 1;
@@ -601,20 +702,20 @@ The parts of the code which haven't been implemented yet are:
 
 =over 4
 
-=item Font::TTF::Post
+=item Post
 
 Version 4 format types are not supported yet.
 
-=item Font::TTF::Cmap
+=item Cmap
 
 Format type 2 (MBCS) has not been implemented yet and therefore may cause
 somewhat spurious results for this table type.
 
-=item Font::TTF::Kern
+=item Kern
 
 Only type 0 & type 2 tables are supported (type 1 & type 3 yet to come).
 
-=item Font::TTF::TTC
+=item TTC
 
 The current Font::TTF::Font::out method does not support the writing of TrueType
 Collections.

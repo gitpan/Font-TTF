@@ -12,7 +12,7 @@
 
 #	ABSTRACT => q[TTF font support for Perl]
 #	AUTHOR => q[martin_hosken@sil.org]
-#	EXE_FILES => [q[scripts/eurofix.plx], q[scripts/hackos2.plx], q[scripts/psfix.plx], q[scripts/ttfname.plx]]
+#	EXE_FILES => [q[scripts/eurofix.plx], q[scripts/hackos2.plx], q[scripts/psfix.plx], q[scripts/ttfname.plx], q[scripts/ttfremap.plx]]
 #	NAME => q[Font::TTF]
 #	VERSION_FROM => q[lib/Font/TTF/Font.pm]
 #	dist => { TO_UNIX=>q[perl -Mtounix -e "tounix(\"$(DISTVNAME)\")"] }
@@ -22,7 +22,7 @@
 
 # --- MakeMaker const_config section:
 
-# These definitions are from config.sh (via C:/Progs/Perl/lib/Config.pm)
+# These definitions are from config.sh (via D:/Progs/Perl/lib/Config.pm)
 
 # They may have been overridden via Makefile.PL or on the command line
 AR = lib
@@ -32,8 +32,8 @@ CCDLFLAGS =
 DLEXT = dll
 DLSRC = dl_win32.xs
 LD = link
-LDDLFLAGS = -dll -nologo -nodefaultlib -release  -libpath:"C:\p4view\Apps\ActivePerl\MSI\data\ActivePerl\Perl\lib\CORE"  -machine:x86
-LDFLAGS = -nologo -nodefaultlib -release  -libpath:"C:\p4view\Apps\ActivePerl\MSI\data\ActivePerl\Perl\lib\CORE"  -machine:x86
+LDDLFLAGS = -dll -nologo -nodefaultlib -release  -libpath:"D:\Progs\Perl\lib\CORE"  -machine:x86
+LDFLAGS = -nologo -nodefaultlib -release  -libpath:"D:\Progs\Perl\lib\CORE"  -machine:x86
 LIBC = msvcrt.lib
 LIB_EXT = .lib
 OBJ_EXT = .obj
@@ -50,33 +50,33 @@ AR_STATIC_ARGS = cr
 NAME = Font::TTF
 DISTNAME = Font-TTF
 NAME_SYM = Font_TTF
-VERSION = 0.22
-VERSION_SYM = 0_22
-XS_VERSION = 0.22
+VERSION = 0.23
+VERSION_SYM = 0_23
+XS_VERSION = 0.23
 INST_BIN = blib\bin
 INST_EXE = blib\script
 INST_LIB = blib\lib
 INST_ARCHLIB = blib\arch
 INST_SCRIPT = blib\script
-PREFIX = C:\Progs\Perl
+PREFIX = D:\Progs\Perl
 INSTALLDIRS = site
 INSTALLPRIVLIB = $(PREFIX)\lib
 INSTALLARCHLIB = $(PREFIX)\lib
-INSTALLSITELIB = C:\Progs\Perl\site\lib
-INSTALLSITEARCH = C:\Progs\Perl\site\lib
+INSTALLSITELIB = D:\Progs\Perl\site\lib
+INSTALLSITEARCH = D:\Progs\Perl\site\lib
 INSTALLBIN = $(PREFIX)\bin
 INSTALLSCRIPT = $(PREFIX)\bin
-PERL_LIB = C:\Progs\Perl\lib
-PERL_ARCHLIB = C:\Progs\Perl\lib
-SITELIBEXP = C:\Progs\Perl\site\lib
-SITEARCHEXP = C:\Progs\Perl\site\lib
+PERL_LIB = D:\Progs\Perl\lib
+PERL_ARCHLIB = D:\Progs\Perl\lib
+SITELIBEXP = D:\Progs\Perl\site\lib
+SITEARCHEXP = D:\Progs\Perl\site\lib
 LIBPERL_A = libperl.lib
 FIRST_MAKEFILE = Makefile
 MAKE_APERL_FILE = Makefile.aperl
 PERLMAINCC = $(CC)
-PERL_INC = C:\Progs\Perl\lib\CORE
-PERL = C:\Progs\Perl\bin\Perl.exe
-FULLPERL = C:\Progs\Perl\bin\Perl.exe
+PERL_INC = D:\Progs\Perl\lib\CORE
+PERL = D:\Progs\Perl\bin\Perl.exe
+FULLPERL = D:\Progs\Perl\bin\Perl.exe
 
 VERSION_MACRO = VERSION
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
@@ -261,10 +261,10 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\GPOS.pm \
 	lib/Font/TTF/Vhea.pm \
 	$(INST_LIB)\Font\TTF\Vhea.pm \
-	lib/Font/TTF/Ttopen.pm \
-	$(INST_LIB)\Font\TTF\Ttopen.pm \
 	lib/Font/TTF/Cmap.pm \
 	$(INST_LIB)\Font\TTF\Cmap.pm \
+	lib/Font/TTF/Ttopen.pm \
+	$(INST_LIB)\Font\TTF\Ttopen.pm \
 	lib/Font/TTF/Prop.pm \
 	$(INST_LIB)\Font\TTF\Prop.pm \
 	lib/Font/TTF/Manual.pod \
@@ -373,7 +373,7 @@ MOD_INSTALL = $(PERL) -I$(INST_LIB) -I$(PERL_LIB) -MExtUtils::Install \
 -e "install({ @ARGV },'$(VERBINST)',0,'$(UNINST)');"
 
 DOC_INSTALL = $(PERL) -e "$$\=\"\n\n\";" \
--e "print '=head2 ', scalar(localtime), ': C<', shift, '>', ' L<', shift, '>';" \
+-e "print '=head2 ', scalar(localtime), ': C<', shift, '>', ' L<', $$arg=shift, '|', $$arg, '>';" \
 -e "print '=over 4';" \
 -e "while (defined($$key = shift) and defined($$val = shift)) { print '=item *';print 'C<', \"$$key: $$val\", '>'; }" \
 -e "print '=back';"
@@ -455,21 +455,21 @@ config :: $(INST_ARCHAUTODIR)\.exists
 config :: $(INST_AUTODIR)\.exists
 	@$(NOOP)
 
-$(INST_AUTODIR)\.exists :: C:\Progs\Perl\lib\CORE\perl.h
+$(INST_AUTODIR)\.exists :: D:\Progs\Perl\lib\CORE\perl.h
 	@$(MKPATH) $(INST_AUTODIR)
-	@$(EQUALIZE_TIMESTAMP) C:\Progs\Perl\lib\CORE\perl.h $(INST_AUTODIR)\.exists
+	@$(EQUALIZE_TIMESTAMP) D:\Progs\Perl\lib\CORE\perl.h $(INST_AUTODIR)\.exists
 
 	-@$(CHMOD) $(PERM_RWX) $(INST_AUTODIR)
 
-$(INST_LIBDIR)\.exists :: C:\Progs\Perl\lib\CORE\perl.h
+$(INST_LIBDIR)\.exists :: D:\Progs\Perl\lib\CORE\perl.h
 	@$(MKPATH) $(INST_LIBDIR)
-	@$(EQUALIZE_TIMESTAMP) C:\Progs\Perl\lib\CORE\perl.h $(INST_LIBDIR)\.exists
+	@$(EQUALIZE_TIMESTAMP) D:\Progs\Perl\lib\CORE\perl.h $(INST_LIBDIR)\.exists
 
 	-@$(CHMOD) $(PERM_RWX) $(INST_LIBDIR)
 
-$(INST_ARCHAUTODIR)\.exists :: C:\Progs\Perl\lib\CORE\perl.h
+$(INST_ARCHAUTODIR)\.exists :: D:\Progs\Perl\lib\CORE\perl.h
 	@$(MKPATH) $(INST_ARCHAUTODIR)
-	@$(EQUALIZE_TIMESTAMP) C:\Progs\Perl\lib\CORE\perl.h $(INST_ARCHAUTODIR)\.exists
+	@$(EQUALIZE_TIMESTAMP) D:\Progs\Perl\lib\CORE\perl.h $(INST_ARCHAUTODIR)\.exists
 
 	-@$(CHMOD) $(PERM_RWX) $(INST_ARCHAUTODIR)
 
@@ -541,22 +541,22 @@ manifypods :
 
 # --- MakeMaker installbin section:
 
-$(INST_SCRIPT)\.exists :: C:\Progs\Perl\lib\CORE\perl.h
+$(INST_SCRIPT)\.exists :: D:\Progs\Perl\lib\CORE\perl.h
 	@$(MKPATH) $(INST_SCRIPT)
-	@$(EQUALIZE_TIMESTAMP) C:\Progs\Perl\lib\CORE\perl.h $(INST_SCRIPT)\.exists
+	@$(EQUALIZE_TIMESTAMP) D:\Progs\Perl\lib\CORE\perl.h $(INST_SCRIPT)\.exists
 
 	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)
 
-EXE_FILES = scripts/eurofix.plx scripts/hackos2.plx scripts/psfix.plx scripts/ttfname.plx
+EXE_FILES = scripts/eurofix.plx scripts/hackos2.plx scripts/psfix.plx scripts/ttfname.plx scripts/ttfremap.plx
 
 FIXIN = $(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) \
     -e "system qq[pl2bat.bat ].shift"
 
-pure_all :: $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx
+pure_all :: $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx $(INST_SCRIPT)\ttfremap.plx
 	@$(NOOP)
 
 realclean ::
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx $(INST_SCRIPT)\ttfremap.plx
 
 $(INST_SCRIPT)\ttfname.plx: scripts/ttfname.plx Makefile $(INST_SCRIPT)\.exists
 	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfname.plx
@@ -582,6 +582,12 @@ $(INST_SCRIPT)\psfix.plx: scripts/psfix.plx Makefile $(INST_SCRIPT)\.exists
 	$(FIXIN) $(INST_SCRIPT)\psfix.plx
 	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\psfix.plx
 
+$(INST_SCRIPT)\ttfremap.plx: scripts/ttfremap.plx Makefile $(INST_SCRIPT)\.exists
+	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfremap.plx
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/ttfremap.plx $(INST_SCRIPT)\ttfremap.plx
+	$(FIXIN) $(INST_SCRIPT)\ttfremap.plx
+	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\ttfremap.plx
+
 
 # --- MakeMaker subdirs section:
 
@@ -593,7 +599,7 @@ $(INST_SCRIPT)\psfix.plx: scripts/psfix.plx Makefile $(INST_SCRIPT)\.exists
 # the Makefile here so a later make realclean still has a makefile to use.
 
 clean ::
-	-$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_rf ./blib $(MAKE_APERL_FILE) $(INST_ARCHAUTODIR)/extralibs.all perlmain.c mon.out core core.*perl.*.? *perl.core so_locations pm_to_blib *~ */*~ */*/*~ *$(OBJ_EXT) *$(LIB_EXT) perl.exe $(BOOTSTRAP) $(BASEEXT).bso $(BASEEXT).def $(BASEEXT).exp
+	-$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_rf ./blib $(MAKE_APERL_FILE) $(INST_ARCHAUTODIR)/extralibs.all perlmain.c mon.out core core.*perl.*.? *perl.core so_locations pm_to_blib *$(OBJ_EXT) *$(LIB_EXT) perl.exe $(BOOTSTRAP) $(BASEEXT).bso $(BASEEXT).def $(BASEEXT).exp
 	-$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e mv Makefile Makefile.old $(DEV_NULL)
 
 
@@ -602,7 +608,35 @@ clean ::
 # Delete temporary files (via clean) and also delete installed files
 realclean purge ::  clean
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_rf $(INST_AUTODIR) $(INST_ARCHAUTODIR)
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Kern\ClassArray.pm $(INST_LIB)\Font\TTF\Anchor.pm $(INST_LIB)\Font\TTF\Head.pm $(INST_LIB)\Font\TTF\PCLT.pm $(INST_LIB)\Font\TTF\Mort\Rearrangement.pm $(INST_LIB)\Font\TTF\Vmtx.pm $(INST_LIB)\Font\TTF\Mort\Noncontextual.pm $(INST_LIB)\Font\TTF\Mort\Chain.pm $(INST_LIB)\Font\TTF\Bsln.pm $(INST_LIB)\Font\TTF\Post.pm $(INST_LIBDIR)\tounix.pm $(INST_LIB)\Font\TTF\Cvt_.pm $(INST_LIB)\Font\TTF\Maxp.pm $(INST_LIB)\Font\TTF\Ttc.pm $(INST_LIB)\Font\TTF\OS_2.pm $(INST_LIB)\Font\TTF\Fmtx.pm $(INST_LIB)\Font\TTF\Name.pm $(INST_LIB)\Font\TTF\Delta.pm $(INST_LIB)\Font\TTF\Kern\CompactClassArray.pm $(INST_LIB)\Font\TTF\Utils.pm $(INST_LIB)\Font\TTF\Mort.pm $(INST_LIB)\Font\TTF\Fpgm.pm $(INST_LIB)\Font\TTF\Loca.pm $(INST_LIB)\Font\TTF\Kern\Subtable.pm $(INST_LIB)\Font\TTF\OldMort.pm $(INST_LIB)\Font\TTF\GPOS.pm $(INST_LIB)\Font\TTF\Vhea.pm $(INST_LIB)\Font\TTF\Ttopen.pm $(INST_LIB)\Font\TTF\Cmap.pm $(INST_LIB)\Font\TTF\Prop.pm $(INST_LIB)\Font\TTF\Manual.pod $(INST_LIB)\Font\TTF\LTSH.pm $(INST_LIB)\Font\TTF\Mort\Subtable.pm $(INST_LIB)\Font\TTF\Hmtx.pm $(INST_LIB)\Font\TTF\AATutils.pm $(INST_LIB)\Font\TTF\Kern\OrderedList.pm $(INST_LIB)\Font\TTF\Kern\StateTable.pm $(INST_LIB)\Font\TTF\XMLparse.pm $(INST_LIB)\Font\TTF\Fdsc.pm $(INST_LIB)\Font\TTF\OldCmap.pm $(INST_LIB)\Font\TTF\Table.pm $(INST_LIB)\Font\TTF\Glyf.pm $(INST_LIB)\Font\TTF\Mort\Ligature.pm $(INST_LIB)\Font\TTF\GSUB.pm $(INST_LIB)\Font\TTF\Coverage.pm $(INST_LIB)\Font\TTF\Hdmx.pm $(INST_LIB)\Font\TTF\AATKern.pm $(INST_LIB)\Font\TTF\Prep.pm $(INST_LIB)\Font\TTF\Mort\Insertion.pm $(INST_LIB)\Font\TTF\Mort\Contextual.pm $(INST_LIB)\Font\TTF\GDEF.pm $(INST_LIB)\Font\TTF\Font.pm $(INST_LIB)\Font\TTF\Feat.pm $(INST_LIB)\Font\TTF\Kern.pm $(INST_LIB)\Font\TTF\Glyph.pm $(INST_LIB)\Font\TTF\Changes $(INST_LIB)\Font\TTF\Hhea.pm $(INST_LIB)\Font\TTF\Segarr.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f  $(INST_LIB)\Font\TTF\Kern\ClassArray.pm $(INST_LIB)\Font\TTF\Anchor.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Head.pm $(INST_LIB)\Font\TTF\PCLT.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Rearrangement.pm $(INST_LIB)\Font\TTF\Vmtx.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Noncontextual.pm $(INST_LIB)\Font\TTF\Mort\Chain.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Bsln.pm $(INST_LIB)\Font\TTF\Post.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIBDIR)\tounix.pm $(INST_LIB)\Font\TTF\Cvt_.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Maxp.pm $(INST_LIB)\Font\TTF\Ttc.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\OS_2.pm $(INST_LIB)\Font\TTF\Fmtx.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Name.pm $(INST_LIB)\Font\TTF\Delta.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Kern\CompactClassArray.pm $(INST_LIB)\Font\TTF\Utils.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort.pm $(INST_LIB)\Font\TTF\Fpgm.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Loca.pm $(INST_LIB)\Font\TTF\Kern\Subtable.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\OldMort.pm $(INST_LIB)\Font\TTF\GPOS.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Vhea.pm $(INST_LIB)\Font\TTF\Cmap.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Ttopen.pm $(INST_LIB)\Font\TTF\Prop.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Manual.pod $(INST_LIB)\Font\TTF\LTSH.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Subtable.pm $(INST_LIB)\Font\TTF\Hmtx.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\AATutils.pm $(INST_LIB)\Font\TTF\Kern\OrderedList.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Kern\StateTable.pm $(INST_LIB)\Font\TTF\XMLparse.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Fdsc.pm $(INST_LIB)\Font\TTF\OldCmap.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Table.pm $(INST_LIB)\Font\TTF\Glyf.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Ligature.pm $(INST_LIB)\Font\TTF\GSUB.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Coverage.pm $(INST_LIB)\Font\TTF\Hdmx.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\AATKern.pm $(INST_LIB)\Font\TTF\Prep.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Insertion.pm $(INST_LIB)\Font\TTF\Mort\Contextual.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\GDEF.pm $(INST_LIB)\Font\TTF\Font.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Feat.pm $(INST_LIB)\Font\TTF\Kern.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Glyph.pm $(INST_LIB)\Font\TTF\Changes
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Hhea.pm $(INST_LIB)\Font\TTF\Segarr.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_rf Makefile Makefile.old
 
 
@@ -621,6 +655,9 @@ skipcheck :
 manifest :
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Manifest=mkmanifest \
 		-e mkmanifest
+
+veryclean : realclean
+	$(RM_F) *~ *.orig */*~ */*.orig
 
 
 # --- MakeMaker dist_core section:
@@ -801,7 +838,7 @@ Makefile : Makefile.PL $(CONFIGDEP)
 
 # --- MakeMaker makeaperl section ---
 MAP_TARGET    = perl
-FULLPERL      = C:\Progs\Perl\bin\Perl.exe
+FULLPERL      = D:\Progs\Perl\bin\Perl.exe
 
 $(MAP_TARGET) :: static $(MAKE_APERL_FILE)
 	$(MAKE) -f $(MAKE_APERL_FILE) $@
@@ -841,7 +878,7 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd:
-	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,22,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
+	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,23,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
 
 # --- MakeMaker pm_to_blib section:
 
