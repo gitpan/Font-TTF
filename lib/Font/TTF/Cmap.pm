@@ -115,7 +115,7 @@ sub read
         {
             my ($j) = 0;
             $fh->read($dat, 256);
-            $s->{'val'} = {map {$j++, ($_ ? ($j, $_) : ())} unpack("C*", $dat)};
+            $s->{'val'} = {map {$j++; ($_ ? ($j - 1, $_) : ())} unpack("C*", $dat)};
             $s->{'Start'} = 0;
             $s->{'Num'} = 256;
         } elsif ($form == 6)
@@ -127,7 +127,7 @@ sub read
             $fh->read($dat, $ecount << 1);
             $s->{'Start'} = $start;
             $s->{'Num'} = $ecount;
-            $s->{'val'} = {map {$start++, ($_ ? ($start - 1, $_) : ())} unpack("n*", $dat)};
+            $s->{'val'} = {map {$start++; ($_ ? ($start - 1, $_) : ())} unpack("n*", $dat)};
         } elsif ($form == 2)
         {
 # no idea what to do here yet
@@ -157,6 +157,31 @@ sub read
                 }
             }
             $s->{'Num'} = 0x10000;               # always ends here
+        } elsif ($form == 8 || $form == 10)
+        {
+            if ($form == 8)
+            {
+                $fh->read($dat, 8196);
+                $num = unpack("N", substr($dat, 8192, 4)); # don't need the map
+            } else
+            {
+                $fh->read($dat, 4);
+                $num = unpack("N", $dat);
+            }
+            $fh->read($dat, 12 * $num);
+            for ($j = 0; $j < $num; $j++)
+            {
+                ($start, $end, $s) = unpack("N3", substr($dat, $j * 12, 12));
+                for ($k = $start; $k <= $end; $k++)
+                { $s->{'val'}{$k} = $s++; }
+            }
+        } elsif ($form == 12)
+        {
+            $fh->read($dat, 8);
+            ($start, $num) = unpack("N2", $dat);
+            $fh->read($dat, $num << 1);
+            for ($j = 0; $j < $num; $j++)
+            { $s->{'val'}{$start + $j} = unpack("n", substr($dat, $j << 1, 2)); }
         }
     }
     $self;
@@ -333,13 +358,17 @@ sub reverse
 
 =head1 BUGS
 
+=over 4
+
 =item *
 
 No support for format 2 tables (MBCS)
 
+=back
+
 =head1 AUTHOR
 
-Martin Hosken E<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

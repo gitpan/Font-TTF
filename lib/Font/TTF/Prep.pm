@@ -26,7 +26,10 @@ Reads the data using C<read_dat>.
 =cut
 
 sub read
-{ $_[0]->read_dat; }
+{
+    $_[0]->{' read'} = 1;
+    $_[0]->read_dat;
+}
 
 
 =head1 BUGS
@@ -35,7 +38,7 @@ None known
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

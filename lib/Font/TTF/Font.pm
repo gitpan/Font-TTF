@@ -98,7 +98,9 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.14;    # MJPH      11-SEP-1999     Sort out Unixisms, again!
+$VERSION = 0.16;    # MJPH      26-APR-2000     Mark read tables as read, tidy up POD
+# $VERSION = 0.15;    # MJPH        5-FEB-2000     Ensure right versions released
+# $VERSION = 0.14;    # MJPH       11-SEP-1999     Sort out Unixisms, agian!
 # $VERSION = 0.13;    # MJPH       9-SEP-1999     Add empty, debug update_bbox
 # $VERSION = 0.12;    # MJPH      22-JUL-1999     Add update_bbox
 # $VERSION = 0.11;    # MJPH       7-JUL-1999     Don't store empties in cmaps
@@ -241,7 +243,7 @@ sub read
     $fh->seek($self->{' OFFSET'}, 0);
     $fh->read($dat, 12);
     ($ver, $dir_num) = unpack("Nn", $dat);
-    $ver == 1 << 16 or return undef;
+    $ver == 1 << 16 || $ver == 0x74727565 or return undef;  # support Mac sfnts
     
     for ($i = 0; $i < $dir_num; $i++)
     {
@@ -271,15 +273,15 @@ sub read
 }
 
 
-=head2 $f->out($fname, @tablelist)
+=head2 $f->out($fname [, @tablelist])
 
-Writes a TTF file consisting of the tables in tablelist. Only those tables
-which this font object has in its directory, will be output. Thus the
-following code is applicable:
+Writes a TTF file consisting of the tables in tablelist. The list is checked to
+ensure that only tables that exist are output. (This means that you can't have
+non table information stored in the font object with key length of exactly 4)
 
-    $font->out($fname, keys %$font)
-
-which will output all the tables in $font.
+In many cases the user simply wants to output all the tables in alphabetical order.
+This can be done by not including a @tablelist, in which case the subroutine will
+output all the defined tables in the font in alphabetical order.
 
 Returns $f on success and undef on failure, including warnings.
 
@@ -310,11 +312,9 @@ sub out
         $self->{' tempDSIG'} = $self->{'DSIG'};
         $self->{'DSIG'} = undef;
     }
-    if ($#tlist < 0)
-    {
-        @tlist = keys %$self;
-        @tlist = sort grep(length($_) == 4 && defined $self->{$_}, @tlist);
-    }
+
+    @tlist = sort keys %$self if ($#tlist < 0);
+    @tlist = grep(length($_) == 4 && defined $self->{$_}, @tlist);
 
     ($numTables, $sRange, $eSel, $shift) = Font::TTF::Utils::TTF_bininfo($#tlist + 1, 16);
     $dat = pack("Nnnnn", 1 << 16, $numTables, $sRange, $eSel, $shift);
@@ -506,7 +506,7 @@ For more details see the appropriate class files.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>
+Martin Hosken Martin_Hosken@sil.org
 
 Copyright Martin Hosken 1998.
 

@@ -341,13 +341,17 @@ sub reverse
 
 =head1 BUGS
 
+=over 4
+
 =item *
 
 No support for format 2 tables (MBCS)
 
+=back
+
 =head1 AUTHOR
 
-Martin Hosken E<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

@@ -152,7 +152,7 @@ cmap.
 sub update
 {
     my ($self) = @_;
-    my ($map, $temp, @keys);
+    my ($map, @keys);
 
     return undef unless $self->{' PARENT'}{'cmap'}{' isDirty'};
     $self->{' PARENT'}{'cmap'}->update;
@@ -161,7 +161,6 @@ sub update
     @keys = sort {$a <=> $b} keys %{$map->{'val'}};
 
     $self->{'usFirstCharIndex'} = $keys[0];
-    $temp = $map->{'val'}[$#{$map->{'val'}} - 1];
     $self->{'usLastCharIndex'} = $keys[-1];
     $self;
 }
@@ -174,7 +173,7 @@ None known
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

@@ -243,6 +243,8 @@ sub out
 
 =head1 BUGS
 
+=over 4
+
 =item *
 
 Only supports kerning table types 0 & 2.
@@ -251,9 +253,11 @@ Only supports kerning table types 0 & 2.
 
 No real support functions to I<do> anything with the kerning tables yet.
 
+=back
+
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

@@ -111,7 +111,7 @@ sub read_dat
 # can't just $self->read here otherwise those tables which start their read sub with
 # $self->read_dat are going to permanently loop
     return undef if ($self->{' read'});
-    $self->{' read'} = 1;
+#    $self->{' read'} = 1;      # Let read do this, now out will call us for subclasses
     $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
     $self->{' INFILE'}->read($self->{' dat'}, $self->{' LENGTH'});
     $self;
@@ -193,7 +193,7 @@ No known bugs
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

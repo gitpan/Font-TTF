@@ -114,7 +114,7 @@ sub out
 {
     my ($self, $fh) = @_;
     my ($numg) = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
-    my ($numh) = $self->{' PARENT'}{'hhea'}{'numberOfHMetrics'};
+    my ($numh) = $self->{' PARENT'}{'hhea'}->read->{'numberOfHMetrics'};
     $self->_out($fh, $numg, $numh, "advance", "lsb");
 }
 
@@ -146,7 +146,7 @@ None known
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

@@ -26,7 +26,10 @@ copy. Nothing more is done with it.
 =cut
 
 sub read
-{ $_[0]->read_dat; }
+{
+    $_[0]->{' read'} = 1;
+    $_[0]->read_dat;
+}
 
 1;
 
@@ -36,7 +39,7 @@ None known
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

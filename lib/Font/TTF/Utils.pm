@@ -19,7 +19,8 @@ use vars qw(@ISA @EXPORT $VERSION);
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT = qw(TTF_Init_Fields TTF_Read_Fields TTF_Out_Fields TTF_Pack TTF_Unpack);
+@EXPORT = qw(TTF_Init_Fields TTF_Read_Fields TTF_Out_Fields TTF_Pack
+             TTF_Unpack TTF_word_utf8 TTF_utf8_word);
 $VERSION = 0.0001;
 
 =head2 ($val, $pos) = TTF_Init_Fields ($str, $pos)
@@ -198,7 +199,7 @@ sub TTF_Out_Fields
 
 =head2 $dat = TTF_Pack($fmt, @data)
 
-The TrueType equivalent to Perl's C<pack> function. See details of L<TTF_Unpack>
+The TrueType equivalent to Perl's C<pack> function. See details of C<TTF_Unpack>
 for how to work the $fmt string.
 
 =cut
@@ -272,6 +273,81 @@ sub TTF_bininfo
 }
 
 
+=head2 TTF_word_utf8($str)
+
+Returns the UTF8 form of the 16 bit string, assumed to be in big endian order,
+including surrogate handling
+
+=cut
+
+sub TTF_word_utf8
+{
+    my ($str) = @_;
+    my ($res, $i);
+    my (@dat) = unpack("n*", $str);
+
+    for ($i = 0; $i <= $#dat; $i++)
+    {
+        my ($dat) = $dat[$i];
+        if ($dat < 0x80)        # Thanks to Gisle Aas for some of his old code
+        { $res .= chr($dat); }
+        elsif ($dat < 0x800)
+        { $res .= chr(0xC0 | ($dat >> 6)) . chr(0x80 | ($dat & 0x3F)); }
+        elsif ($dat >= 0xD800 && $dat < 0xDC00)
+        {
+            my ($dat1) = $dat[++$i];
+            my ($top) = (($dat & 0x3C0) >> 6) + 1;
+            $res .= chr(0xF0 | ($top >> 2))
+                  . chr(0x80 | (($top & 1) << 4) | (($dat & 0x3C) >> 2))
+                  . chr(0x80 | (($dat & 0x3) << 4) | (($dat1 & 0x3C0) >> 6))
+                  . chr(0x80 | ($dat1 & 0x3F));
+        } else
+        { $res .= chr(0xE0 | ($dat >> 12)) . chr(0x80 | (($dat >> 6) & 0x3F))
+                . chr(0x80 | ($dat & 0x3F)); }
+    }
+    $res;
+}
+
+
+=head2 TTF_utf8_word($str)
+
+Returns the 16-bit form in big endian order of the UTF 8 string, including
+surrogate handling to Unicode.
+
+=cut
+
+sub TTF_utf8_word
+{
+    my ($str) = @_;
+    my ($res);
+
+    $str = "$str";              # copy $str
+    while (length($str))        # Thanks to Gisle Aas for some of his old code
+    {
+        $str =~ s/^[\x80-\xBF]+//o;
+        if ($str =~ s/^([\x00-\x7F]+)//o)
+        { $res .= pack("n*", unpack("C*", $1)); }
+        elsif ($str =~ s/^([\xC0-\xDF])([\x80-\xBF])//o)
+        { $res .= pack("n", ((ord($1) & 0x1F) << 6) | (ord($2) & 0x3F)); }
+        elsif ($str =~ s/^([\0xE0-\xEF])([\x80-\xBF])([\x80-\xBF])//o)
+        { $res .= pack("n", ((ord($1) & 0x0F) << 12)
+                          | ((ord($2) & 0x3F) << 6)
+                          | (ord($3) & 0x3F)); }
+        elsif ($str =~ s/^([\xF0-\xF7])([\x80-\xBF])([\x80-\xBF])([\x80-\xBF])//o)
+        {
+            my ($b1, $b2, $b3, $b4) = (ord($1), ord($2), ord($3), ord($4));
+            $res .= pack("n", ((($b1 & 0x07) << 8) | (($b2 & 0x3F) << 2)
+                            | (($b3 & 0x30) >> 4)) + 0xD600);  # account for offset
+            $res .= pack("n", ((($b3 & 0x0F) << 6) | ($b4 & 0x3F)) + 0xDC00);
+        }
+        elsif ($str =~ s/^[\xF8-\xFF][\x80-\xBF]*//o)
+        { }
+    }
+    $res;
+}
+            
+    
+
 1;
 
 =head1 BUGS
@@ -280,7 +356,7 @@ No known bugs
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

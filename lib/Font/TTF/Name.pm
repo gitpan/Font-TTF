@@ -146,14 +146,18 @@ sub out
 
 =head1 BUGS
 
+=over 4
+
 =item *
 
 Unicode type strings will be stored in utf8 for all known platforms,
-once Perl 5.005 has been released.
+once Perl 5.6 has been released and I can find all the mapping tables, etc.
+
+=back
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

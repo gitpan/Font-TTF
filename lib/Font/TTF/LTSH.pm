@@ -12,6 +12,8 @@ always linear.
 
 =head1 INSTANCE VARIABLES
 
+=over 4
+
 =item glyphs
 
 An array of ppem values. One value per glyph
@@ -79,7 +81,7 @@ None known
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

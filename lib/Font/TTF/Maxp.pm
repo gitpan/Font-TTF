@@ -1,6 +1,6 @@
 package Font::TTF::Maxp;
 
-=head1
+=head1 NAME
 
 Font::TTF::Maxp - Maximum Profile table in a font
 
@@ -155,7 +155,7 @@ None known
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut

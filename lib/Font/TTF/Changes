@@ -1,3 +1,6 @@
+Note. The version number implies a release point. Thus changes that go into a
+version occur above the version number, not after it.
+
 * 0.05
 ** cmap
 	debug reverse()
@@ -59,4 +62,28 @@ Various changes to reduce warnings
 
 *** ttfenc
         Now supports the difference between MS post name list and TeXs
+
+* 0.14
+
+        Sort out mix up over CVS mess
+
+* 0.15
+
+** Table
+        read_dat no longer marks table as read
+
+** Cvt_
+        Mark table as read when read
+
+** Fpgm
+        Mark table as read when read
+
+** Prep
+        Mark table as read when read
+
+** Font
+        Add support for Mac sfnt version code ('true')
+        Be stricter on out @fontlist, only output tables that exist
+
+* 0.16
 

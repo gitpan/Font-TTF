@@ -44,7 +44,8 @@ sub read
 {
     my ($self) = @_;
 
-    $self->read_dat || return $self;
+    $self->read_dat || return undef;
+    $self->{' read'} = 1;
     $self->{'val'} = [TTF_Unpack("s*", $self->{' dat'})];
     $self;
 }
@@ -73,7 +74,7 @@ None known
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. See L<Font::TTF::Font> for copyright and
+Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
 licensing.
 
 =cut
