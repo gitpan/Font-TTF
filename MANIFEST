@@ -19,6 +19,7 @@ lib/Font/TTF/Manual.pod
 lib/Font/TTF/Maxp.pm
 lib/Font/TTF/Name.pm
 lib/Font/TTF/OS_2.pm
+lib/Font/TTF/OldCmap.pm
 lib/Font/TTF/PCLT.pm
 lib/Font/TTF/Post.pm
 lib/Font/TTF/Prep.pm

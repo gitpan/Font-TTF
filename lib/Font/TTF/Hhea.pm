@@ -42,7 +42,7 @@ sub init
     while (<Font::TTF::Hhea::DATA>)
     {
         ($k, $v, $c) = TTF_Init_Fields($_, $c);
-        next unless $k ne "";
+        next unless defined $k && $k ne "";
         $fields{$k} = $v;
     }
 }

@@ -36,8 +36,8 @@ sub TTF_Init_Fields
 
     $str =~ s/\r?\n$//o;   
     ($key, $val) = split(',\s*', $str);
-    return (undef, undef, 0) unless ($key ne "");
-    if ($val =~ m/^(\+?)(\d*)(\D+)(\d?)/oi)
+    return (undef, undef, 0) unless (defined $key && $key ne "");
+    if ($val =~ m/^(\+?)(\d*)(\D+)(\d*)/oi)
     {
         $rel = $1;
         if ($rel eq "+")
@@ -47,6 +47,8 @@ sub TTF_Init_Fields
         $val = $3;
         $len = $4;
     }
+    $len = "" unless defined $len;
+    $pos = 0 if !defined $pos || $pos eq "";
     $res = "$pos:$val:$len";
     if ($val eq "f" || $val =~ m/^[l]/oi)
     { $pos += 4 * ($len ne "" ? $len : 1); }
@@ -76,6 +78,7 @@ sub TTF_Read_Fields
     foreach $f (keys %{$fields})
     {
         ($pos, $type, $arrlen) = split(':', $fields->{$f});
+        $pos = 0 if $pos eq "";
         if ($arrlen ne "")
         { $self->{$f} = [TTF_Unpack("$type$arrlen", substr($dat, $pos))]; }
         else
@@ -115,7 +118,7 @@ sub TTF_Unpack
     {
         $type = $1;
         $arrlen = $2;
-        $arrlen = 1 if $arrlen eq "";
+        $arrlen = 1 if !defined $arrlen || $arrlen eq "";
         $arrlen = -1 if $arrlen eq "*";
 
         for ($i = 0; ($arrlen == -1 && $dat ne "") || $i < $arrlen; $i++)
@@ -208,7 +211,7 @@ sub TTF_Pack
     while ($fmt =~ s/^([flsc])(\d+|\*)?//oi)
     {
         $type = $1;
-        $arrlen = $2;
+        $arrlen = $2 || "";
         $arrlen = $#obj + 1 if $arrlen eq "*";
         $arrlen = 1 if $arrlen eq "";
     

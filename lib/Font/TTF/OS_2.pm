@@ -89,7 +89,7 @@ sub init
             next;
         }
         ($k, $v, $c) = TTF_Init_Fields($_, $c);
-        next unless $k ne "";
+        next unless defined $k && $k ne "";
         for ($i = $n; $i < 3; $i++)
         { $fields[$i]{$k} = $v; }
     }

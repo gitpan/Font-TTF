@@ -98,15 +98,17 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.10;    # MJPH      21-JUN-1999     Use IO::File
+$VERSION = 0.12;    # MJPH      22-JUL-1999     Add update_bbox
+# $VERSION = 0.11;    # MJPH       7-JUL-1999     Don't store empties in cmaps
+# $VERSION = 0.10;    # MJPH      21-JUN-1999     Use IO::File
 # $VERSION = 0.09;    # MJPH       9-JUN-1999     Add 5.004 require, minor tweeks in cmap
 # $VERSION = 0.08;    # MJPH      19-MAY-1999     Sort out line endings for Unix
 # $VERSION = 0.07;    # MJPH      28-APR-1999     Get the regression tests to work
 # $VERSION = 0.06;    # MJPH      26-APR-1999     Start to add to CVS, correct MANIFEST.SKIP
 # $VERSION = 0.05;    # MJPH      13-APR-1999     See changes for 0.05
-# $VERSION = 0.04;    #   MJPH    13-MAR-1999     Tidy up Tarball
-# $VERSION = 0.03;    #   MJPH     9-MAR-1999     Move to Font::TTF for CPAN
-# $VERSION = 0.02;  #   MJPH    12-FEB-1999     Add support for ' nocsum' for DSIGS
+# $VERSION = 0.04;    # MJPH      13-MAR-1999     Tidy up Tarball
+# $VERSION = 0.03;    # MJPH       9-MAR-1999     Move to Font::TTF for CPAN
+# $VERSION = 0.02;    # MJPH      12-FEB-1999     Add support for ' nocsum' for DSIGS
 # $VERSION = 0.0001;
 
 %tables = (
@@ -142,7 +144,7 @@ Adds the given class to be used when representing the given table name. It also
 
 sub AddTable
 {
-    my ($class, $table, $useclass);
+    my ($class, $table, $useclass) = @_;
 
     $tables{$table} = $useclass;
 #    $useclass =~ s|::|/|oig;

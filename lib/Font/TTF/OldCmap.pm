@@ -1,8 +1,10 @@
-package Font::TTF::Cmap;
+package Font::TTF::OldCmap;
 
 =head1 NAME
 
-Font::TTF::Cmap - Character map table
+Font::TTF::OldCmap - Character map table
+
+This module is deprecated
 
 =head1 DESCRIPTION
 
@@ -58,7 +60,8 @@ Gives the version (or language) information for this subtable
 
 =item val
 
-A hash keyed by the codepoint value (not a string) storing the glyph id
+This points to a L<Font::TTF::Segarr> which contains the content of the particular
+subtable.
 
 =back
 
@@ -68,8 +71,8 @@ A hash keyed by the codepoint value (not a string) storing the glyph id
 
 use strict;
 use vars qw(@ISA);
-use Font::TTF::Table;
-use Font::TTF::Utils;
+require Font::TTF::Table;
+require Font::TTF::Segarr;
 
 @ISA = qw(Font::TTF::Table);
 
@@ -113,9 +116,9 @@ sub read
         $s->{'Ver'} = $ver;
         if ($form == 0)
         {
-            my ($j) = 0;
+            $s->{'val'} = Font::TTF::Segarr->new;
             $fh->read($dat, 256);
-            $s->{'val'} = {map {$j++, ($_ ? ($j, $_) : ())} unpack("C*", $dat)};
+            $s->{'val'}->fastadd_segment(0, 2, unpack("C*", $dat));
             $s->{'Start'} = 0;
             $s->{'Num'} = 256;
         } elsif ($form == 6)
@@ -125,9 +128,10 @@ sub read
             $fh->read($dat, 4);
             ($start, $ecount) = unpack("n2", $dat);
             $fh->read($dat, $ecount << 1);
+            $s->{'val'} = Font::TTF::Segarr->new;
+            $s->{'val'}->fastadd_segment($start, 2, unpack("n*", $dat));
             $s->{'Start'} = $start;
             $s->{'Num'} = $ecount;
-            $s->{'val'} = {map {$start++, ($_ ? ($start - 1, $_) : ())} unpack("n*", $dat)};
         } elsif ($form == 2)
         {
 # no idea what to do here yet
@@ -137,6 +141,7 @@ sub read
             $num = unpack("n", $dat);
             $num >>= 1;
             $fh->read($dat, $len - 14);
+            $s->{'val'} = Font::TTF::Segarr->new;
             for ($j = 0; $j < $num; $j++)
             {
                 $end = unpack("n", substr($dat, $j << 1, 2));
@@ -144,7 +149,7 @@ sub read
                 $delta = unpack("n", substr($dat, ($j << 1) + ($num << 2) + 2, 2));
                 $delta -= 65536 if $delta > 32767;
                 $range = unpack("n", substr($dat, ($j << 1) + $num * 6 + 2, 2));
-                $s->{'Start'} = $start unless $j;
+                @ids = ();
                 for ($k = $start; $k <= $end; $k++)
                 {
                     if ($range == 0)
@@ -152,11 +157,14 @@ sub read
                     else
                     { $id = unpack("n", substr($dat, ($j << 1) + $num * 6 +
                                         2 + ($k - $start) * 2 + $range, 2)) + $delta; }
-		            $id -= 65536 if $id >= 65536;
-                    $s->{'val'}{$k} = $id if ($id);
+		            $id -= 65536 if $id > 65536;
+                    push (@ids, $id);
                 }
+                $s->{'val'}->fastadd_segment($start, 0, @ids);
             }
+            $s->{'val'}->tidy;
             $s->{'Num'} = 0x10000;               # always ends here
+            $s->{'Start'} = $s->{'val'}[0]{'START'};
         }
     }
     $self;
@@ -175,7 +183,7 @@ sub ms_lookup
     my ($self, $uni) = @_;
 
     $self->find_ms || return undef unless (defined $self->{' mstable'});
-    return $self->{' mstable'}{'val'}{$uni};
+    return $self->{' mstable'}{'val'}->at($uni);
 }
 
 
@@ -216,7 +224,7 @@ just copies from input file to output
 sub out
 {
     my ($self, $fh) = @_;
-    my ($loc, $s, $i, $base_loc, $j, @keys);
+    my ($loc, $s, $i, $base_loc, $j);
 
     return $self->SUPER::out($fh) unless $self->{' read'};
 
@@ -229,53 +237,49 @@ sub out
     for ($i = 0; $i < $self->{'Num'}; $i++)
     {
         $s = $self->{'Tables'}[$i];
-        @keys = sort {$a <=> $b} keys %{$s->{'val'}};
+        $s->{'val'}->tidy;
         $s->{' outloc'} = $fh->tell();
         $fh->print(pack("n3", $s->{'Format'}, 0, $s->{'Ver'}));       # come back for length
         if ($s->{'Format'} == 0)
         {
-            $fh->print(pack("C256", @{$s->{'val'}}{0 .. 255}));
+            $fh->print(pack("C256", $s->{'val'}->at(0, 256)));
         } elsif ($s->{'Format'} == 6)
         {
             $fh->print(pack("n2", $s->{'Start'}, $s->{'Num'}));
-            $fh->print(pack("n*", @{$s->{'val'}}{$s->{'Start'} .. $s->{'Start'} + $s->{'Num'} - 1}));
+            $fh->print(pack("n*", $s->{'val'}->at($s->{'Start'}, $s->{'Num'})));
         } elsif ($s->{'Format'} == 2)
         {
         } elsif ($s->{'Format'} == 4)
         {
-            my ($num, $sRange, $eSel, $eShift, @starts, @ends, $doff);
-            my (@deltas, $delta, @range, $flat, $k, $segs, $count, $newseg, $v);
+            my ($num, $sRange, $eSel);
+            my (@deltas, $delta, @range, $flat, $k, $segs, $count);
 
-            push(@keys, 0xFFFF) unless ($keys[-1] == 0xFFFF);
-            $newseg = 1; $num = 0;
-            for ($j = 0; $j <= $#keys; $j++)
-            {
-                $v = $s->{'val'}{$keys[$j]};
-                if ($newseg)
-                {
-                    $delta = $v;
-                    $doff = $j;
-                    $flat = 1;
-                    push(@starts, $keys[$j]);
-                    $newseg = 0;
-                }
-                $delta = 0 if ($delta + $j - $doff != $v);
-                $flat = 0 if ($v == 0);
-                if ($j == $#keys || $keys[$j] + 1 != $keys[$j+1])
-                {
-                    push (@ends, $keys[$j]);
-                    push (@deltas, $delta ? $delta - $keys[$doff] : 0);
-                    push (@range, $flat);
-                    $num++;
-                    $newseg = 1;
-                }
-            }
-
-            ($num, $sRange, $eSel, $eShift) = Font::TTF::Utils::TTF_bininfo($num, 2);
-            $fh->print(pack("n4", $num * 2, $sRange, $eSel, $eShift));
-            $fh->print(pack("n*", @ends));
+            $num = $#{$s->{'val'}} + 1;
+            $segs = $s->{'val'};
+            for ($sRange = 1, $eSel = 0; $sRange <= $num; $eSel++)
+            { $sRange <<= 1;}
+            $eSel--;
+            $fh->print(pack("n4", $num * 2, $sRange, $eSel, ($num * 2) - $sRange));
+            $fh->print(pack("n*", map {$_->{'START'} + $_->{'LEN'} - 1} @$segs));
             $fh->print(pack("n", 0));
-            $fh->print(pack("n*", @starts));
+            $fh->print(pack("n*", map {$_->{'START'}} @$segs));
+
+            for ($j = 0; $j < $num; $j++)
+            {
+                $delta = $segs->[$j]{'VAL'}[0]; $flat = 1;
+                for ($k = 1; $k < $segs->[$j]{'LEN'}; $k++)
+                {
+                    if ($segs->[$j]{'VAL'}[$k] == 0)
+                    { $flat = 0; }
+                    if ($delta + $k != $segs->[$j]{'VAL'}[$k])
+                    {
+                        $delta = 0;
+                        last;
+                    }
+                }
+                push (@range, $flat);
+                push (@deltas, ($delta ? $delta - $segs->[$j]{'START'} : 0));
+            }
             $fh->print(pack("n*", @deltas));
 
             $count = 0;
@@ -287,7 +291,7 @@ sub out
                 else
                 {
                     $range[$j] = ($count + $num - $j) << 1;
-                    $count += $ends[$j] - $starts[$j] + 1;
+                    $count += $segs->[$j]{'LEN'};
                 }
             }
 
@@ -296,7 +300,8 @@ sub out
             for ($j = 0; $j < $num; $j++)
             {
                 next if ($range[$j] == 0);
-                $fh->print(pack("n*", @{$s->{'val'}}{$starts[$j] .. $ends[$j]}));
+                for ($k = 0; $k < $segs->[$j]{'LEN'}; $k++)
+                { $fh->print(pack("n", $segs->[$j]{'VAL'}[$k])); }
             }
         }
 
@@ -322,10 +327,13 @@ sub reverse
 {
     my ($self, $tnum) = @_;
     my ($table) = defined $tnum ? $self->{'Tables'}[$tnum] : $self->find_ms;
-    my (@res, $code, $gid);
+    my (@res, $i, $s, $first);
 
-    while (($code, $gid) = each(%{$table->{'val'}}))
-    { $res[$gid] = $code unless ($res[$gid] > 0 && $res[$gid] < $code); }
+    foreach $s (@{$table->{'val'}})
+    {
+        $first = $s->{'START'};
+        map {$res[$_] = $first unless $res[$_]; $first++;} @{$s->{'VAL'}};
+    }
     @res;
 }
 

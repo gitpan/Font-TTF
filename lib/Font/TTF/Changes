@@ -21,3 +21,14 @@
 ** Utils
         Debug FDot2.14 conversion
 
+* 0.11
+** cmap
+        Don't store empty entries in the cmap
+
+* 0.12
+Various changes to reduce warnings
+
+** glyph
+        Add update_bbox
+        Do full glyph writes if loca read rather than glyf read
+        Get glyph update working usefully. Clarify glyf->read

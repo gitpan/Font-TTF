@@ -9,6 +9,12 @@ Font::TTF::Glyf - The Glyf data table
 This is a stub table. The real data is held in the loca table. If you want to get a glyf
 look it up in the loca table as C<$f->{'loca'}{'glyph'}[$num]>. It won't be here!
 
+The difference between reading this table as opposed to the loca table is that
+reading this table will cause updated glyphs to be written out rather than just
+copying the glyph information from the input file. This causes font writing to be
+slower. So read the glyf as opposed to the loca table if you want to change glyf
+data. Read the loca table only if you are just wanting to read the glyf information.
+
 This class is used when writing the glyphs though.
 
 =head1 METHODS
@@ -51,7 +57,7 @@ sub out
     return $self->SUPER::out($fh) unless $self->{' read'};
 
     $loca = $self->{' PARENT'}{'loca'}{'glyphs'};
-    $numGlyphs = $self->{' PARENT'}{'maxp'}->read->{'numGlyphs'};
+    $numGlyphs = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
 
     $offset = 0;
     for ($i = 0; $i < $numGlyphs; $i++)

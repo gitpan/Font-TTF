@@ -72,6 +72,7 @@ sub read
         $self->{'glyphs'}[$i] = ($self->{'glyphtype'} || "Font::TTF::Glyph")->new(
                 LOC => $last << ($locFmt ? 0 : 1),
                 OUTLOC => $last << ($locFmt ? 0 : 1),
+                ' PARENT' => $self->{' PARENT'},
                 INFILE => $fh,
                 BASE => $glyfLoc,
                 OUTLEN => ($loc - $last) << ($locFmt ? 0 : 1),
@@ -106,8 +107,8 @@ sub out
     $count = 0;
     for ($i = 0; $i < $numGlyphs; $i++)
     {
-        $g = $self->{'glyphs'}[$i];
-        if ($g eq "")
+        $g = ($self->{'glyphs'}[$i]) || "";
+        unless ($g)
         {
             $count++;
             next;

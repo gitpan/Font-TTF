@@ -160,6 +160,31 @@ calling C<out> or C<out_dat>.
 
 =back
 
+=head2 Editing
+
+If you want to edit a glyph in some way, then you should read_dat the glyph, then
+make your changes and then update the glyph or set the $g->{' isdirty'} variable.
+It is the application's duty to ensure that the following instance variables are
+correct, from which update will calculate the rest, including the bounding box
+information.
+
+    numPoints
+    numberOfContours
+    endPoints
+    x, y, flags         (only flags bit 0)
+    instLen
+    hints
+
+For components, the x, y & flags are not required but the following information
+is required for each component.
+
+    flag                (bits 2, 4, 10, 11, 12)
+    glyph
+    args
+    scale
+    metric              (glyph instance variable)
+    
+
 =head1 METHODS
 
 =cut
@@ -174,7 +199,7 @@ sub init
     while (<Font::TTF::Glyph::DATA>)
     {
         ($k, $v, $c) = TTF_Init_Fields($_, $c);
-        next unless $k ne "";
+        next unless defined $k && $k ne "";
         $fields{$k} = $v;
     }
 }
@@ -245,6 +270,7 @@ sub read_dat
     {
         $self->{'endPoints'} = [unpack("n*", substr($dat, $fp, $num << 1))];
         $fp += $num << 1;
+        $max = 0;
         foreach (@{$self->{'endPoints'}})
         { $max = $_ if $_ > $max; }
         $max++;
@@ -385,7 +411,8 @@ sub update
     my ($self) = @_;
     my ($dat, $loc, $len, $flag, $x, $y, $i, $comp, $num);
 
-    return $self unless $self->{' read'} > 1;
+    return $self unless (defined $self->{' read'} && $self->{' read'} > 1);
+    $self->update_bbox;
     $self->{'DAT'} = TTF_Out_Fields($self, \%fields, 10);
     $num = $self->{'numberOfContours'};
     if ($num > 0)
@@ -453,14 +480,17 @@ sub update
             $flag = $comp->{'flag'} & 7174;        # bits 2,4,10,11,12
             $flag |= 1 unless ($comp->{'args'}[0] > -129 && $comp->{'args'}[0] < 128
                     && $comp->{'args'}[1] > -129 && $comp->{'args'}[1] < 128);
-            if ($comp->{'scale'}[1] == 0 && $comp->{'scale'}[2] == 0)
+            if (defined $comp->{'scale'})
             {
-                if ($comp->{'scale'}[0] == $comp->{'scale'}[3])
-                { $flag |= 8 unless ($comp->{'scale'}[0] == 0); }
-                else
-                { $flag |= 64; }
-            } else
-            { $flag |= 128; }
+                if ($comp->{'scale'}[1] == 0 && $comp->{'scale'}[2] == 0)
+                {
+                    if ($comp->{'scale'}[0] == $comp->{'scale'}[3])
+                    { $flag |= 8 unless ($comp->{'scale'}[0] == 0); }
+                    else
+                    { $flag |= 64; }
+                } else
+                { $flag |= 128; }
+            }
             
             $flag |= 512 if (defined $self->{'metric'} && $self->{'metric'} == $i);
             if ($i == $#{$self->{'comps'}})
@@ -484,7 +514,7 @@ sub update
             elsif ($flag & 128)
             { $self->{'DAT'} .= TTF_Pack("F4", @{$comp->{'scale'}}); }
         }
-        if ($self->{'instLen'} > 0)
+        if (defined $self->{'instLen'} && $self->{'instLen'} > 0)
         {
             $len = $self->{'instLen'};
             $self->{'DAT'} .= pack("n", $len);
@@ -498,17 +528,76 @@ sub update
 }
 
 
-=head2 $g->maxInfo($parent)
+=head2 $g->update_bbox
+
+Updates the bounding box for this glyph according to the points in the glyph
+
+=cut
+
+sub update_bbox
+{
+    my ($self) = @_;
+    my ($num, $maxx, $minx, $maxy, $miny, $i, $comp, $x, $y, $compg);
+
+    return $self unless $self->{' read'} > 1;       # only if read_dat done
+    $miny = $minx = 65537; $maxx = $maxy = 0;
+    $num = $self->{'numberOfContours'};
+    if ($num > 0)
+    {
+        for ($i = 0; $i < $self->{'numPoints'}; $i++)
+        {
+            ($x, $y) = ($self->{'x'}[$i], $self->{'y'}[$i]);
+
+            $maxx = $x if ($x > $maxx);
+            $minx = $x if ($x < $minx);
+            $maxy = $y if ($y > $maxy);
+            $miny = $y if ($y < $miny);
+        }
+    }
+
+    elsif ($num < 0)
+    {
+        foreach $comp (@{$self->{'comps'}})
+        {
+            my ($gnx, $gny, $gxx, $gxy);
+            my ($sxx, $sxy, $syx, $syy);
+            
+            $compg = $self->{' PARENT'}{'loca'}{'glyphs'}[$comp->{'glyph'}]->update_bbox;
+            ($gnx, $gny, $gxx, $gxy) = @{$compg}{'xMin', 'xMax', 'yMin', 'yMax'};
+            if (defined $comp->{'scale'})
+            {
+                ($sxx, $sxy, $syx, $syy) = @{$comp->{'scale'}};
+                ($gnx, $gny, $gxx, $gxy) = ($gnx*$sxx+$gny*$syx + $comp->{'args'}[0],
+                                            $gnx*$sxy+$gny*$syy + $comp->{'args'}[1],
+                                            $gxx*$sxx+$gxy*$syx + $comp->{'args'}[0],
+                                            $gxx*$sxy+$gxy*$syy + $comp->{'args'}[1]);
+            }
+            $maxx = $gxx if $gxx > $maxx;
+            $minx = $gnx if $gnx < $minx;
+            $maxy = $gxy if $gxy > $maxy;
+            $miny = $gny if $gny < $miny;
+        }
+    }
+    $self->{'xMax'} = $maxx;
+    $self->{'xMin'} = $minx;
+    $self->{'yMax'} = $maxy;
+    $self->{'yMin'} = $miny;
+    $self;
+}
+            
+
+
+            
+=head2 $g->maxInfo
 
 Returns lots of information about a glyph so that the C<maxp> table can update
-itself. $parent is an attempt for glyphs to not have to know their ownership.
-It is the array in which the glyph and all its components may be found.
+itself.
 
 =cut
 
 sub maxInfo
 {
-    my ($self, $parent) = @_;
+    my ($self) = @_;
     my (@res, $i, @n);
 
     $self->read_dat;            # make sure we've read some data
@@ -523,7 +612,7 @@ sub maxInfo
         $res[6] = 1;
         for ($i = 0; $i <= $#{$self->{'comps'}}; $i++)
         {
-            @n = $parent->[$self->{'comps'}[$i]{'glyph'}]->maxInfo;
+            @n = $self->{' PARENT'}{'loca'}{'glyphs'}[$self->{'comps'}[$i]{'glyph'}]->maxInfo;
             $res[2] += $n[2] == 0 ? $n[0] : $n[2];
             $res[3] += $n[3] == 0 ? $n[1] : $n[3];
             $res[5]++;
@@ -541,11 +630,6 @@ sub maxInfo
 
 The instance variables used here are somewhat clunky and inconsistent with
 the other tables.
-
-=item *
-
-Is a glyph not knowing its owning object a good or bad thing? Currently it
-doesn't know.
 
 =item *
 

@@ -47,10 +47,10 @@ use Font::TTF::Utils;
 sub init
 {
     my ($k, $v, $c);
-    while (<Font::TTF::Pclt::DATA>)
+    while (<Font::TTF::PCLT::DATA>)
     {
         ($k, $v, $c) = TTF_Init_Fields($_, $c);
-        next unless $k ne "";
+        next unless defined $k && $k ne "";
         $fields{$k} = $v;
     }
 }

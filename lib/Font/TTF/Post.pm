@@ -35,12 +35,13 @@ can't handle version 2.5.
 
 =item VAL
 
-Contains an array indexed by glyph number of Postscript names.
+Contains an array indexed by glyph number of Postscript names. This is used when
+writing out a font.
 
 =item STRINGS
 
 An associative array of Postscript names mapping to the highest glyph with that
-name.
+name. These may not be in sync with VAL.
 
 =back
 
@@ -86,7 +87,7 @@ sub init
         if ($mode == 0)
         {
             ($k, $v, $c) = TTF_Init_Fields($_, $c);
-            next unless $k ne "";
+            next unless defined $k && $k ne "";
             $fields{$k} = $v;
         }
         elsif ($mode == 1)
@@ -139,7 +140,7 @@ sub read
         for ($i = 0; $i < $numGlyphs; $i++)
         {
             $off = unpack("n", substr($dat, ($i + 1) << 1, 2));
-            $maxoff = $off if ($off > $maxoff);
+            $maxoff = $off if (!defined $maxoff || $off > $maxoff);
         }
         for ($i = 0; $i < $maxoff - 257; $i++)
         {

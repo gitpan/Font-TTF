@@ -1,5 +1,8 @@
         Perl Module: Font::TTF
 
+Note: There are significant changes with this release which may stop your existing
+scripts working. See Changes (at the bottom of this file) for details.
+
 =head1 Introduction
 
 Perl module for TrueType font hacking. Supports reading, processing and writing
@@ -21,6 +24,8 @@ ttfremap        Allows creation of new MS cmap based on old one.
 
 Any suggestions, improvements, additions, subclasses, etc. would be gratefully
 received and probably included in a future release. Please send them to me.
+
+This module has been tested on Win32, Unix and Mac.
 
 =head1 SYNOPSIS
 
@@ -75,6 +80,41 @@ If you have write access to the perl library directories, you may then
 install by typing:
 
     make install
+
+=head1 CHANGES
+
+=head2 Cmap
+
+With version 0.1 the structure of the way cmaps are stored has changed. If you are
+using the internal structure of a cmap, you should read this.
+
+Previously a cmap was stored using a segmented array structure which was somewhat
+cumbersome to use. This has changed, the mechanism is now a simple hash. Thus to
+look-up a unicode value all you need say is:
+
+    $f->{'cmap'}->find_ms->{'val'}{$unicode}
+
+and you can change the value in a cmap by assigning to this array. There is nothing
+more to be done.
+
+If you have a script you do not want to change and would like the previous module
+used instead, add the following line to the start of your script:
+
+    Font::TTF::Font->AddTable('cmap', 'Font::TTF::OldCmap');
+
+which will use the OldCmap module instead of the new one, and this will continue
+to use the Font::TTF::Segarr. Notice that OldCmap is deprecated and will not be
+supported and may disappear in future releases.
+
+I hope the much easier way of interacting with cmaps offsets any hassle that this
+change now may cause.
+
+=head2 Future Changes
+
+I do not anticipate any more restructuring changes (but reserve the right to do so).
+One area I am waiting to change is that of the Name table where I would like to 
+pass strings using UTF-8. When the UTF-8 version of Perl is ported to Win32 then I
+can start the changes and cross-mappings (for the Mac).
 
 =head1 AUTHOR
 
