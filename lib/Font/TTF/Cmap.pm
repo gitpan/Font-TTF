@@ -101,22 +101,24 @@ sub read
     {
         $s = $self->{'Tables'}[$i];
         $fh->seek($s->{'LOC'}, 0);
-        $fh->read($dat, 6);
-        ($form, $len, $ver) = (unpack("n3", $dat));
+        $fh->read($dat, 2);
+        $form = unpack("n", $dat);
 
         $s->{'Format'} = $form;
-        $s->{'Ver'} = $ver;
         if ($form == 0)
         {
             my ($j) = 0;
+
+            $fh->read($dat, 4);
+            ($len, $s->{'Ver'}) = unpack('n2', $dat);
             $fh->read($dat, 256);
             $s->{'val'} = {map {$j++; ($_ ? ($j - 1, $_) : ())} unpack("C*", $dat)};
         } elsif ($form == 6)
         {
             my ($start, $ecount);
             
-            $fh->read($dat, 4);
-            ($start, $ecount) = unpack("n2", $dat);
+            $fh->read($dat, 8);
+            ($len, $s->{'Ver'}, $start, $ecount) = unpack('n4', $dat);
             $fh->read($dat, $ecount << 1);
             $s->{'val'} = {map {$start++; ($_ ? ($start - 1, $_) : ())} unpack("n*", $dat)};
         } elsif ($form == 2)
@@ -124,8 +126,8 @@ sub read
 # no idea what to do here yet
         } elsif ($form == 4)
         {
-            $fh->read($dat, 8);
-            $num = unpack("n", $dat);
+            $fh->read($dat, 12);
+            ($len, $s->{'Ver'}, $num) = unpack('n3', $dat);
             $num >>= 1;
             $fh->read($dat, $len - 14);
             for ($j = 0; $j < $num; $j++)
@@ -148,6 +150,8 @@ sub read
             }
         } elsif ($form == 8 || $form == 12)
         {
+            $fh->read($dat, 10);
+            ($len, $s->{'Ver'}) = unpack('x2N2', $dat);
             if ($form == 8)
             {
                 $fh->read($dat, 8196);
@@ -166,8 +170,8 @@ sub read
             }
         } elsif ($form == 10)
         {
-            $fh->read($dat, 8);
-            ($start, $num) = unpack("N2", $dat);
+            $fh->read($dat, 18);
+            ($len, $s->{'Ver'}, $start, $num) = unpack('x2N4', $dat);
             $fh->read($dat, $num << 1);
             for ($j = 0; $j < $num; $j++)
             { $s->{'val'}{$start + $j} = unpack("n", substr($dat, $j << 1, 2)); }
@@ -422,7 +426,7 @@ sub reverse
     my (@res, $code, $gid);
 
     while (($code, $gid) = each(%{$table->{'val'}}))
-    { $res[$gid] = $code unless ($res[$gid] > 0 && $res[$gid] < $code); }
+    { $res[$gid] = $code unless (defined $res[$gid] && $res[$gid] > 0 && $res[$gid] < $code); }
     @res;
 }
 

@@ -118,7 +118,9 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.28;    # MJPH       13-MAR-2002     update ttfbuilder, add Font::TTF::Cmap::ms_enc()
+$VERSION = 0.30;    # MJPH      28-MAY-2002     add updated release
+# $VERSION = 0.29;    # MJPH       9-APR-2002     update ttfbuilder, sort out surrogates
+# $VERSION = 0.28;    # MJPH      13-MAR-2002     update ttfbuilder, add Font::TTF::Cmap::ms_enc()
 # $VERSION = 0.27;    # MJPH       6-FEB-2002     update ttfbuilder, support no fpgm, no more __DATA__
 # $VERSION = 0.26;    # MJPH      19-SEP-2001     Update ttfbuilder
 # $VERSION = 0.25;    # MJPH      18-SEP-2001     problems in update of head
@@ -649,60 +651,24 @@ sub release
 {
     my ($self) = @_;
 
-    ###########################################################################
-    # Go through our list of keys and clean things up as needed:
-    # - All scalar values get deleted explicitly, to free up their memory.
-    #   This is generally handled well by Perl, but our checks later on require
-    #   that we free them up explicitly.
-    # - All 'Font::TTF::*' elements get explicitly destructed, to free up all
-    #   of their memory and break potential circular references.
-    # - All 'IO::File' objects get silently destructed; we know there are a few
-    #   and rather than name them all explicitly, we'll just clean them up here
-    #   by type.
-    ###########################################################################
-    # NOTE: The checks below have been ordered such that the most commonly
-    #       occurring items get checked for and cleaned out first.
-    ###########################################################################
-    # FURTHER NOTE: Reducing the checks below to the least amount of checks
-    #               possible did not create any noticable performance
-    #               improvement.
-    ###########################################################################
-    foreach my $key (keys %{$self})
+# delete stuff that we know we can, here
+
+    my @tofree = map { delete $self->{$_} } keys %{$self};
+
+    while (my $item = shift @tofree)
     {
-        my $ref = ref($self->{$key});
-        if ($ref =~ /^Font::TTF::/o)
-        {
-            # Sub-element, explicitly destruct.
-            my $val = $self->{$key};
-            delete $self->{$key};
-            $val->release();
-        }
-        elsif ($ref eq '')
-        {
-            # Remove scalar value.
-            delete $self->{$key};
-        }
-        elsif ($ref eq 'IO::File')
-        {
-            # IO object, destruct silently.
-            delete $self->{$key};
-        }
+        my $ref = ref($item);
+        if (UNIVERSAL::can($item, 'release'))
+        { $item->release(); }
+        elsif ($ref eq 'ARRAY')
+        { push( @tofree, @{$item} ); }
+        elsif (UNIVERSAL::isa($ref, 'HASH'))
+        { release($item); }
     }
 
-    ###########################################################################
-    # Now that we think that we've gone back and freed up all of the memory
-    # that we were using, check to make sure that we don't have any keys left
-    # in our own hash (we shouldn't).  IF we do have keys left, throw a warning
-    # message.
-    ###########################################################################
+# check that everything has gone - it better had!
     foreach my $key (keys %{$self})
-    {
-        warn ref($self) . " still has '$key' key left after release.\n";
-    }
-
-    ###########################################################################
-    # All done cleaning up.
-    ###########################################################################
+    { warn ref($self) . " still has '$key' key left after release.\n"; }
 }
 
 1;

@@ -7,7 +7,7 @@ Font::TTF::Glyf - The Glyf data table
 =head1 DESCRIPTION
 
 This is a stub table. The real data is held in the loca table. If you want to get a glyf
-look it up in the loca table as C<$f->{'loca'}{'glyph'}[$num]>. It won't be here!
+look it up in the loca table as C<$f->{'loca'}{'glyphs'}[$num]>. It won't be here!
 
 The difference between reading this table as opposed to the loca table is that
 reading this table will cause updated glyphs to be written out rather than just

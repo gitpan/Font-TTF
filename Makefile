@@ -50,9 +50,9 @@ AR_STATIC_ARGS = cr
 NAME = Font::TTF
 DISTNAME = Font-TTF
 NAME_SYM = Font_TTF
-VERSION = 0.28
-VERSION_SYM = 0_28
-XS_VERSION = 0.28
+VERSION = 0.3
+VERSION_SYM = 0_3
+XS_VERSION = 0.3
 INST_BIN = blib\bin
 INST_EXE = blib\script
 INST_LIB = blib\lib
@@ -904,7 +904,7 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd:
-	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,28,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
+	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,3,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
 
 # --- MakeMaker pm_to_blib section:
 

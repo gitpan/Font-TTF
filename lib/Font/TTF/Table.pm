@@ -339,73 +339,26 @@ sub release
 {
     my ($self) = @_;
 
-    ###########################################################################
-    # First, close any open ' INFILE' handle, BUT ONLY IF WE HAVE NO 'PARENT'
-    # object (otherwise we'll leave it up to the 'PARENT' to close the file).
-    ###########################################################################
-    if (exists $self->{' INFILE'} && !exists $self->{'PARENT'})
+# delete stuff that we know we can, here
+
+    my @tofree = map { delete $self->{$_} } keys %{$self};
+
+    while (my $item = shift @tofree)
     {
-        close( $self->{' INFILE'} );
-        delete $self->{' INFILE'};
+        my $ref = ref($item);
+        if (UNIVERSAL::can($item, 'release'))
+        { $item->release(); }
+        elsif ($ref eq 'ARRAY')
+        { push( @tofree, @{$item} ); }
+        elsif (UNIVERSAL::isa($ref, 'HASH'))
+        { release($item); }
     }
 
-    ###########################################################################
-    # Go through our list of keys, and clean things up as needed:
-    # - All 'parent' (and derivitive) keys get deleted without explicit
-    #   destruction, to break circular references.
-    # - All scalar values get deleted explicitly, to free up their memory.
-    #   This is generally handled well by Perl, but our checks later on require
-    #   that we free them up explicitly.
-    # - All 'Font::TTF::*' elements get explicitly destructed, to free up all
-    #   of their memory and break potential circular references.
-    ###########################################################################
-    # NOTE: The checks below have been ordered such that the most commonly
-    #       occurring items get checked for and cleaned out first.
-    ###########################################################################
-    # FURTHER NOTE: Reducing the checks below to the least amount of checks
-    #               possible did not create any noticable performance
-    #               improvement.
-    ###########################################################################
+# check that everything has gone - it better had!
     foreach my $key (keys %{$self})
-    {
-        my $ref = ref($self->{$key});
-        if (($ref eq '') || ($ref eq 'ARRAY') || ($ref eq 'HASH'))
-        {
-            # Remove scalar/hash/list value.
-            delete $self->{$key};
-        }
-        elsif ($ref =~ /^Font::TTF::/o)
-        {
-            if ($key =~ /parent/io)
-            {
-                # Remove potential circular reference.
-                delete $self->{$key};
-            }
-            else
-            {
-                # Sub-element, explicitly destruct.
-                my $val = $self->{$key};
-                delete $self->{$key};
-                $val->release();
-            }
-        }
-    }
-
-    ###########################################################################
-    # Now that we think that we've gone back and freed up all of the memory
-    # that we were using, check to make sure that we don't have any keys left
-    # in our own hash (we shouldn't).  IF we do have keys left, throw a warning
-    # message.
-    ###########################################################################
-    foreach my $key (keys %{$self})
-    {
-        warn ref($self) . " still has '$key' key left after release.\n";
-    }
-
-    ###########################################################################
-    # All done cleaning up.
-    ###########################################################################
+    { warn ref($self) . " still has '$key' key left after release.\n"; }
 }
+
 
 sub __dumpvar__
 {

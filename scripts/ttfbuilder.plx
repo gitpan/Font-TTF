@@ -8,7 +8,8 @@ use XML::Parser::Expat;
 use Pod::Usage;
 use Getopt::Std;
 
-$VERSION = 0.06;    # MJPH       7-MAR-2002     errors, base glyphs with no outlines, 
+$VERSION = 0.07;    # MJPH      18-MAR-2002     Support .notdef
+# $VERSION = 0.06;    # MJPH       7-MAR-2002     errors, base glyphs with no outlines, 
 #                                                 properties & notes, symbol fonts, surrogates
 # $VERSION = 0.05;    # MJPH      10-DEC-2001     improve error messages
 # $VERSION = 0.04;    # MJPH      19-SEP-2001     documentation improvements add Pod::Usage
@@ -75,7 +76,7 @@ if (defined $opt_x)
         {
             $gid = $attrs{'GID'} || $c->{'val'}{hex($attrs{'UID'})}
                 || $if->{'post'}{'STRINGS'}{$attrs{'PSName'}};
-            if ($gid == 0 && ($attrs{'PSName'} || $attrs{'UID'}))
+            if (!defined $gid && ($attrs{'PSName'} || $attrs{'UID'}))
             { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'} in $opt_x"); }
             $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
             $xml_dat[$gid]{'UID'} = $attrs{'UID'};
@@ -782,6 +783,7 @@ sub do_name
     my ($f, $inf) = @_;
     my ($base) = $f->{'name'}{'strings'}[$inf->{'num'}];
     my ($pid, $eid, $lid);
+    my $processed;
 
     for ($pid = 0; $pid <= $#{$base}; $pid++)
     {
@@ -796,8 +798,18 @@ sub do_name
             {
                 next if (defined $inf->{'lid'} && $lid != $inf->{'lid'});
                 $base->[$pid][$eid]{$lid} = $inf->{'text'};
+                $processed = 1;
             }
         }
+    }
+    # Add this name if we haven't done something with it yet and it is fully specified:
+    if (!$processed)
+    {
+        if (defined $inf->{'pid'} && defined $inf->{'eid'} && defined $inf->{'lid'})
+        { $f->{'name'}{'strings'}[$inf->{'num'}][$inf->{'pid'}][$inf->{'eid'}]{$inf->{'lid'}}
+                = $inf->{'text'}; } 
+        else
+        { warn "Incompletely specified string not added to name table."; }    
     }
 }
 
@@ -821,9 +833,7 @@ The main features of ttfbuilder are
 =item *
 
 Ability to create glyphs that are not in any cmap and to reference such glyphs via
-postscript name, glyph id or Unicode cmap entry. Also the ability to create non-BMP
-Unicode entries and create surrogate based cmaps. In addition, symbol fonts are
-supported.
+postscript name, glyph id or Unicode cmap entry.
 
 =item *
 
@@ -833,8 +843,7 @@ absolute locations in terms of shifting.
 
 =item *
 
-Ability to change the name of the font and change strings in the name table. And
-set OS/2 coverage bits.
+Ability to change the name of the font and change strings in the name table.
 
 =back
 
@@ -906,11 +915,13 @@ The DTD for the configuration file is:
     <!ATTLIST font
         ascent CDATA #IMPLIED
         descent CDATA #IMPLIED
-        linegap CDATA #IMPLIED>
+        linegap CDATA #IMPLIED
+        cp CDATA #IMPLIED
+        codepage CDATA #IMPLIED>
 
     <!ELEMENT names (string)+>
 
-    <!ELEMENT string EMPTY>
+    <!ELEMENT string (#PCDATA)>
     <!ATTLIST string
         num CDATA #REQUIRED
         pid CDATA #IMPLIED

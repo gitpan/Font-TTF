@@ -571,7 +571,7 @@ sub update
             
             $flag |= 512 if (defined $self->{'metric'} && $self->{'metric'} == $i);
             if ($i == $#{$self->{'comps'}})
-            { $flag |= 256 if ($self->{'instLen'} > 0); }
+            { $flag |= 256 if (defined $self->{'instLen'} && $self->{'instLen'} > 0); }
             else
             { $flag |= 32; }
             

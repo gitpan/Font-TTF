@@ -1,4 +1,3 @@
-#! perl
 use Font::TTF::Font;
 require 'getopts.pl';
 
@@ -10,13 +9,19 @@ unless (defined $opt_c && defined $ARGV[1] && !(defined $opt_s && defined $opt_u
     TTFRemap -c file [-r] [-s | -u] <infile> <outfile>
 Remaps the MS cmap of a font without removing any glyphs. Updates the OS/2
 table according to first and last char of new cmap. The changes file consists
-of lines of the form:
+of lines of any of the following forms:
 
+    uni_first, uni_to
     uni_first, uni_last, uni_to
-
-where uni_first is the first of a range of Unicodes in the source cmap
-uni_last is the last of that range, and uni_to is where to map that range to
-in the output cmap.
+    g, gid_first, uni_to
+    g, gid_first, gid_last, uni_to
+    
+where uni_first (gid_first) is the first of a range of Unicodes (glyph IDs) 
+in the source font, uni_last (gid_last) is the last of that range (if not
+specified, default is same as uni_first (gid_last)), and uni_to 
+is the start of the sequential set of Unicodes that will be altered in the 
+output cmap so they map to the specified range. NOTE: Unicode values
+should be in hex, glyph IDs are decimal.
 
     -r      Replace (copy the old cmap before mapping)
     -s      Convert to symbol encoding
@@ -44,22 +49,26 @@ else
 }
 while (<INFILE>)
 {
-    next unless (m/^[0-9A-Z]/oi);
+    next unless (m/^[0-9A-Z]/oi);       # this is klunky and needs to go
     chomp;
-    s/\s*[#;].*//oi;
+    s/\s*[#;].*//o;
     @work = split /,\s*/;
-    next unless $#work == 2;
 
-    @addr = ();
-    foreach (@work)
-    {
-        m/^[0-9a-z]+/oi;
-        push(@addr, hex($&));
-    }
+    $UseGID = lc($work[0] eq 'g');
+    shift @work if $UseGID;
+ 
+    next if $#work < 1 or $#work > 2;
+    
+    @work[1,2] = @work[0,1] if $#work < 2;	# if uni_last/g_last is missing, make it same as uni_first/g_first
 
-    map {$s->{$addr[2] + $_} = $o->{$addr[0] + $_}} (0 .. ($addr[1] - $addr[0]));
-    $cmin = $addr[2] if $cmin > $addr[2];
-    $cmax = ($addr[2] + $addr[1] - $addr[0]) if ($cmax < ($addr[2] + $addr[1] - $addr[0]));
+    $first = ($UseGID ? $work[0] : hex($work[0]));
+    $last  = ($UseGID ? $work[1] : hex($work[1]));
+    $to = hex($work[2]);
+
+    map {$s->{$to + $_} = ($UseGID ? ($first + $_) : $o->{$first + $_})} (0 .. ($last - $first));
+
+    $cmin = $to if $cmin > $to;
+    $cmax = ($to + $last - $first) if ($cmax < ($to + $last - $first));
 }
 
 close(INFILE);
