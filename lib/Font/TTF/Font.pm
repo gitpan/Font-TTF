@@ -94,7 +94,11 @@ use strict;
 use vars qw(%tables $VERSION);
 use Symbol();
 
-$VERSION = 0.04;    # MJPH      12-MAR-1999     Tidy up tar ball filename case
+$VERSION = 0.08;    # MJPH      19-MAY-1999     Sort out line endings for Unix
+# $VERSION = 0.07;    # MJPH      28-APR-1999     Get the regression tests to work
+# $VERSION = 0.06;    # MJPH      26-APR-1999     Start to add to CVS, correct MANIFEST.SKIP
+# $VERSION = 0.05;    # MJPH      13-APR-1999     See changes for 0.05
+# $VERSION = 0.04;    #   MJPH    13-MAR-1999     Tidy up Tarball
 # $VERSION = 0.03;    #   MJPH     9-MAR-1999     Move to Font::TTF for CPAN
 # $VERSION = 0.02;  #   MJPH    12-FEB-1999     Add support for ' nocsum' for DSIGS
 # $VERSION = 0.0001;
@@ -284,8 +288,11 @@ sub out
         $self->{' tempDSIG'} = $self->{'DSIG'};
         $self->{'DSIG'} = undef;
     }
-    @tlist = keys %$self unless ($#tlist >= 0);
-    @tlist = sort grep(length($_) == 4 && defined $self->{$_}, @tlist);
+    if ($#tlist < 0)
+    {
+        @tlist = keys %$self;
+        @tlist = sort grep(length($_) == 4 && defined $self->{$_}, @tlist);
+    }
 
     ($numTables, $sRange, $eSel, $shift) = Font::TTF::Utils::TTF_bininfo($#tlist + 1, 16);
     $dat = pack("Nnnnn", 1 << 16, $numTables, $sRange, $eSel, $shift);

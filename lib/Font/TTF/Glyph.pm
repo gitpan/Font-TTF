@@ -419,6 +419,7 @@ sub update
                 $flag |= 32 if ($y >= 0);
             }
             $self->{'DAT'} .= pack("C", $flag);                    # sorry no repeats
+            $self->{'flags'}[$i] = $flag;
         }
         for ($i = 0; $i < $self->{'numPoints'}; $i++)
         {

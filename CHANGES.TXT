@@ -1,5 +1,0 @@
-0.04
-    * Correct filename case in tar ball
-
-0.03
-    * Move module from TTF to Font::TTF

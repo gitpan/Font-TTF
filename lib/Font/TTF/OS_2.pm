@@ -82,6 +82,7 @@ sub init
     @lens = (76, 84, 94);
     while (<Font::TTF::OS_2::DATA>)
     {
+        s/\r?\n$//;
         if (m/^\s*$/)
         {
             $n++;

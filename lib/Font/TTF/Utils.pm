@@ -34,7 +34,7 @@ sub TTF_Init_Fields
     my ($str, $pos) = @_;
     my ($key, $val, $res, $len, $rel);
 
-    chomp($str);
+    $str =~ s/\r?\n$//o;   
     ($key, $val) = split(',\s*', $str);
     return (undef, undef, 0) unless ($key ne "");
     if ($val =~ m/^(\+?)(\d*)(\D+)(\d?)/oi)
@@ -125,7 +125,6 @@ sub TTF_Unpack
                 ($res, $frac) = unpack("nn", $dat);
                 substr($dat, 0, 4) = "";
                 $res -= 65536 if $res > 32767;
-                $frac -= 65536 if $frac > 32767;
                 $res += $frac / 65536.;
             }
             elsif ($type eq "F")

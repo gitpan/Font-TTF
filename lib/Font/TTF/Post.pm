@@ -77,7 +77,7 @@ sub init
     $mode = 0;
     while(<Font::TTF::Post::DATA>)
     {
-        chomp;
+        s/\r?\n$//;
         if ($_ eq "")
         {
             $mode++;

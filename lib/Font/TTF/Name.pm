@@ -105,13 +105,13 @@ sub out
 
     $loc = tell($fh);
     print $fh pack("n3", 0, 0, 0);
-    foreach $nid (@{$self->{'strings'}})
+    foreach $nid (0 .. $#{$self->{'strings'}})
     {
-        foreach $pid (@{$self->{'strings'}[$nid]})
+        foreach $pid (0 .. $#{$self->{'strings'}[$nid]})
         {
-            foreach $eid (@{$self->{'strings'}[$nid][$pid]})
+            foreach $eid (0 .. $#{$self->{'strings'}[$nid][$pid]})
             {
-                foreach $lid (keys %{$self->{'strings'}[$nid][$pid]})
+                foreach $lid (sort keys %{$self->{'strings'}[$nid][$pid][$eid]})
                 {
                     $str_trans = $self->{'strings'}[$nid][$pid][$eid]{$lid};
 # do platform specific munging here
@@ -127,7 +127,7 @@ sub out
     foreach $todo (@todo)
     {
         $len = length($todo->[4]);
-        print $fh pack("n6", $pid, $eid, $lid, $nid, $len, $offset);
+        print $fh pack("n6", @{$todo}[0..3], $len, $offset);
         $offset += $len;
     }
     

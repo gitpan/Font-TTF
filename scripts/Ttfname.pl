@@ -1,15 +1,3 @@
-@REM=(' -*- Perl -*-
-@echo off
-if not exist %0.bat goto n1
-perl %0.bat %1 %2 %3 %4 %5 %6 %7 %8 %9
-goto end
-:n1
-if not exist %0 goto n2
-perl %0 %1 %2 %3 %4 %5 %6 %7 %8 %9
-goto end
-:n2
-perl -S %0.bat %1 %2 %3 %4 %5 %6 %7 %8 %9
-goto end ') if 0 ;
 
 #   Title:      TTFNAME.BAT
 #   Author:     M. Hosken

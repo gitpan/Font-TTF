@@ -1,16 +1,3 @@
-@rem = ('--*-Perl-*--
-@echo off
-if not exist %0 goto n1
-perl %0 %1 %2 %3 %4 %5 %6 %7 %8 %9
-goto endofperl
-:n1
-if not exist %0.bat goto n2
-perl %0.bat %1 %2 %3 %4 %5 %6 %7 %8 %9
-goto endofperl
-:n2
-perl -S %0.bat %1 %2 %3 %4 %5 %6 %7 %8 %9
-goto endofperl
-@rem ') if 0;
 
 use Font::TTF::Font;
 require 'getopts.pl';

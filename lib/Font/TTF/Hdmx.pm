@@ -81,7 +81,7 @@ sub out
     $numg = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
     @ppem = grep(/^\d+$/, sort {$a <=> $b} keys %$self);
     $pad = "\000" x (3 - ($numg + 1) % 4);
-    $len = $numg + 2 + $pad;
+    $len = $numg + 2 + length($pad);
     print $fh pack("nnN", 0, $#ppem + 1, $len);
     for $i (@ppem)
     {

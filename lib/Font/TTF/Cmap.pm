@@ -155,6 +155,7 @@ sub read
                     else
                     { $id = unpack("n", substr($dat, ($j << 1) + $num * 6 +
                                         2 + ($k - $start) * 2 + $range, 2)) + $delta; }
+		            $id -= 65536 if $id > 65536;
                     push (@ids, $id);
                 }
                 $s->{'val'}->fastadd_segment($start, 0, @ids);
@@ -333,7 +334,7 @@ sub reverse
     foreach $s (@{$table->{'val'}})
     {
         $first = $s->{'START'};
-        map {$res[$_] = $first++} @{$s->{'val'}};
+        map {$res[$_] = $first++} @{$s->{'VAL'}};
     }
     @res;
 }

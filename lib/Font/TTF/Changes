@@ -1,0 +1,6 @@
+* 0.05
+** cmap
+	debug reverse()
+        provide scripts as .pl instead of .bat to placate Unix world
+        rename makefile.pl to Makefile.PL to keep Unix happy
+        Add ttfremap script
