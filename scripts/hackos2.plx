@@ -1,4 +1,4 @@
-
+#! perl
 #   Title:          HACKOS2.BAT
 #   Author:         M. Hosken
 #   Description:

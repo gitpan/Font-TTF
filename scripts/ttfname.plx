@@ -1,4 +1,4 @@
-
+#! perl
 #   Title:      TTFNAME.BAT
 #   Author:     M. Hosken
 #   Description: Change the family name of a font, thus changing full font

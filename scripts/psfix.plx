@@ -1,4 +1,4 @@
-
+#! perl
 use Font::TTF::Font;
 
 unless (defined $ARGV[1])

@@ -1,3 +1,4 @@
+#! perl
 use Font::TTF::Font;
 use XML::Parser::Expat;
 use Getopt::Std;

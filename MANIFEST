@@ -5,6 +5,7 @@ Examples/symbol.rmp
 Examples/ttfdeltable.plx
 Examples/ttfenc.plx
 Examples/ttfwidth.plx
+Examples/ttunadopter.plx
 Examples/xmldump.plx
 Examples/zerohyph.plx
 MANIFEST
@@ -72,6 +73,7 @@ lib/Font/TTF/Utils.pm
 lib/Font/TTF/Vhea.pm
 lib/Font/TTF/Vmtx.pm
 lib/Font/TTF/XMLparse.pm
+lib/ttfmod.pl
 pmake.bat
 scripts/check_attach.plx
 scripts/eurofix.plx

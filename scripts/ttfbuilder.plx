@@ -1,3 +1,4 @@
+#! perl
 use Font::TTF::Font;
 use Font::TTF::Glyf;
 use Font::TTF::Glyph;
@@ -5,28 +6,40 @@ use Font::TTF::Hmtx;
 use Font::TTF::Loca;
 use Font::TTF::PSNames;
 use XML::Parser::Expat;
+use Pod::Usage;
 use Getopt::Std;
 
-$VERSION = 0.01;    #   MJPH    31-JUL-2001     Original
+$VERSION = 0.04;    # MJPH      19-SEP-2001     documentation improvements add Pod::Usage
+# $VERSION = 0.03;    # MJPH      18-SEP-2001     add ascent, descent, linegap attributes
+# $VERSION = 0.02;    #   MJPH    12-SEP-2001     -x now optional, -a bug fixes
+# $VERSION = 0.01;    #   MJPH    31-JUL-2001     Original
 
-getopts('ac:d:x:z:');
+getopts('ac:d:hx:z:');
 
-unless (defined $ARGV[1] && defined $opt_c && defined $opt_x)
+unless ((defined $ARGV[1] && defined $opt_c) || defined $opt_h)
 {
     die <<'EOT';
-    ttfbuilder -c config.xml -x attach.xml [-z out.xml] infile.ttf outfile.ttf
+    ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] infile.ttf outfile.ttf
 Builds outfile.ttf from infile.ttf according to config.xml. Also requires an
 attachment point database (attach.xml) and can generate out.xml.
 
-    -a          Append to infile.ttf
+    -a          initialise output font with all the glyphs of the input font
+                and append new glyphs to that
     -c file     Configuration file to use
     -d bits     Don't do certain things:
                 0: Set dates in the font to now
                 1: Auto-create postscript names for component glyphs
                 2: Hack the copyright message (if none set)
+    -h          Help
     -x file     Attachment database to read
     -z file     Attachment database to output
 EOT
+}
+
+if ($opt_h)
+{
+    pod2usage( -verbose => 2);
+    exit;
 }
 
 $if = Font::TTF::Font->open($ARGV[0]) || die "Can't read font $ARGV[0]";
@@ -42,42 +55,45 @@ $c = $if->{'cmap'}->read->find_ms;
 $if->{'hmtx'}->read;
 $fname = $if->{'name'}->find_name(4);
 
-$xml = XML::Parser::Expat->new();
-$xml->setHandlers('Start' => sub {
-    my ($xml, $tag, %attrs) = @_;
+if (defined $opt_x)
+{
+    $xml = XML::Parser::Expat->new();
+    $xml->setHandlers('Start' => sub {
+        my ($xml, $tag, %attrs) = @_;
 
-    if ($tag eq 'glyph')
-    {
-        $gid = $attrs{'GID'} || $c->{'val'}{hex($attrs{'UID'})}
-            || $if->{'post'}{'STRINGS'}{$attrs{'PSName'}};
-        if ($gid == 0 && ($attrs{'PSName'} || $attrs{'UID'}))
-        { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'}"); }
-        $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
-        $xml_dat[$gid]{'UID'} = $attrs{'UID'};
-    } elsif ($tag eq 'point')
-    {
-        $pname = $attrs{'type'};
-    } elsif ($tag eq 'contour')
-    {
-        $xml_dat[$gid]{'points'}{$pname}{'cont'} = $attrs{'num'};
-    } elsif ($tag eq 'location')
-    {
-        $xml_dat[$gid]{'points'}{$pname}{'loc'} = [$attrs{'x'}, $attrs{'y'}];
-    } elsif ($tag eq 'font')
-    {
-        $fontname = $attrs{'name'};
-        $fontupem = $attrs{'upem'};
-    }
-}, 'End' => sub {
-    my ($xml, $tag) = @_;
+        if ($tag eq 'glyph')
+        {
+            $gid = $attrs{'GID'} || $c->{'val'}{hex($attrs{'UID'})}
+                || $if->{'post'}{'STRINGS'}{$attrs{'PSName'}};
+            if ($gid == 0 && ($attrs{'PSName'} || $attrs{'UID'}))
+            { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'}"); }
+            $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
+            $xml_dat[$gid]{'UID'} = $attrs{'UID'};
+        } elsif ($tag eq 'point')
+        {
+            $pname = $attrs{'type'};
+        } elsif ($tag eq 'contour')
+        {
+            $xml_dat[$gid]{'points'}{$pname}{'cont'} = $attrs{'num'};
+        } elsif ($tag eq 'location')
+        {
+            $xml_dat[$gid]{'points'}{$pname}{'loc'} = [$attrs{'x'}, $attrs{'y'}];
+        } elsif ($tag eq 'font')
+        {
+            $fontname = $attrs{'name'};
+            $fontupem = $attrs{'upem'};
+        }
+    }, 'End' => sub {
+        my ($xml, $tag) = @_;
 
-    if ($tag eq 'point')
-    { $xml->xperror('Attachment point must have location or contour')
-        unless (defined $xml_dat[$gid]{'points'}{$pname}{'cont'}
-                || defined $xml_dat[$gid]{'points'}{$pname}{'loc'}); }
-});
+        if ($tag eq 'point')
+        { $xml->xperror('Attachment point must have location or contour')
+            unless (defined $xml_dat[$gid]{'points'}{$pname}{'cont'}
+                    || defined $xml_dat[$gid]{'points'}{$pname}{'loc'}); }
+    });
 
-$xml->parsefile($opt_x) || die "Can't read $opt_x";
+    $xml->parsefile($opt_x) || die "Can't read $opt_x";
+}
 
 $if->{'loca'}->read;
 $of->{'hmtx'} = Font::TTF::Hmtx->new(PARENT => $of, read => 1);
@@ -92,18 +108,20 @@ if ($opt_a)
         my ($g) = $if->{'loca'}{'glyphs'}[$i];
         my ($bbox);
 
-        next unless ($g);
-        $g->read;
-        $bbox = [$g->{'xMin'}, $g->{'yMin'}, $g->{'xMax'}, $g->{'yMax'}];
-
         $aglyph = {
             'GID' => $i,
-            'glyph_list' => [{
+            'PSName' => $if->{'post'}{'VAL'}[$i]};
+
+        if ($g)
+        {
+            $g->read;
+            $bbox = 
+            $aglyph->{'glyph_list'} = [{
                 'glyph' => $g,
                 'GID' => $i,
-                'offset' => [0, 0]}],
-            'bbox' => $bbox,
-            'PSName' => $if->{'post'}{'VAL'}[$i]};
+                'offset' => [0, 0]}];
+            $aglyph->{'bbox'} = [$g->{'xMin'}, $g->{'yMin'}, $g->{'xMax'}, $g->{'yMax'}];
+        }
 
         foreach $p (keys %{$xml_dat[$i]{'points'}})
         {
@@ -221,6 +239,12 @@ $xml->setHandlers('Start' => sub {
     elsif ($tag eq 'string')
     {
         $cur_str = {%attrs};
+    }
+    elsif ($tag eq 'font')
+    {
+        $of->{'hhea'}{'Ascender'} = $attrs{'ascent'} if defined $attrs{'ascent'};
+        $of->{'hhea'}{'Descender'} = $attrs{'descent'} if defined $attrs{'descent'};
+        $of->{'hhea'}{'LineGap'} = $attrs{'linegap'} if defined $attrs{'linegap'};
     }
 }, 'End' => sub {
     my ($xml, $tag) = @_;
@@ -768,6 +792,10 @@ assembled from the font name and style (string id 2).
 The DTD for the configuration file is:
 
     <!ELEMENT font (names?, glyphs)>
+    <!ATTLIST font
+        ascent CDATA #IMPLIED
+        descent CDATA #IMPLIED
+        linegap CDATA #IMPLIED>
 
     <!ELEMENT names (string)+>
 
@@ -806,8 +834,8 @@ The DTD for the configuration file is:
 
     <!ELEMENT shift #EMPTY>
     <!ATTLIST shift
-        x      CDATA #REQUIRED
-        y      CDATA #REQUIRED>
+        x      CDATA #IMPLIED
+        y      CDATA #IMPLIED>
 
 From this small language, quite a lot can be done.
 
@@ -876,4 +904,3 @@ file to write a new attachment point database to, which represents the attachmen
 point database for the generated font.
 
 =cut
-

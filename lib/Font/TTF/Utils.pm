@@ -483,6 +483,115 @@ Converts a binary string of hinting code into a textual representation
 }
 
 
+=head2 make_circle($f, $cmap, [$dia, $sb, $opts])
+
+Adds a dotted circle to a font. This function is very configurable. The
+parameters passed in are:
+
+=over 4
+
+=item $f
+
+Font to work with. This is required.
+
+=item $cmap
+
+A cmap table (not the 'val' sub-element of a cmap) to add the glyph too. Optional.
+
+=item $dia
+
+Optional diameter for the main circle. Defaults to 80% em
+
+=item $sb
+
+Side bearing. The left and right side-bearings are always the same. This value
+defaults to 10% em.
+
+=back
+
+There are various options to control all sorts of interesting aspects of the circle
+
+=over 4
+
+=item numDots
+
+Number of dots in the circle
+
+=item numPoints
+
+Number of curve points to use to create each dot
+
+=item uid
+
+Unicode reference to store this glyph under in the cmap. Defaults to 0x25CC
+
+=item pname
+
+Postscript name to give the glyph. Defaults to uni25CC.
+
+=item -dRadius
+
+Radius of each dot.
+
+=back
+
+=cut
+
+sub make_circle
+{
+    my ($font, $cmap, $dia, $sb, %opts) = @_;
+    my ($upem) = $font->{'head'}{'unitsPerEm'};
+    my ($glyph) = Font::TTF::Glyph->new('PARENT' => $font, 'read' => 2);
+    my ($PI) = 3.1415926535;
+    my ($R, $r, $xorg, $yorg);
+    my ($i, $j, $numg, $maxp);
+    my ($numc) = $opts{'-numDots'} || 16;
+    my ($nump) = ($opts{'-numPoints'} * 2) || 8;
+    my ($uid) = $opts{'-uid'} || 0x25CC;
+    my ($pname) = $opts{'-pname'} || 'uni25CC';
+
+    $dia ||= $upem * .8;    # .95 to fit exactly
+    $sb ||= $upem * .1;
+    $R = $dia / 2;
+    $r = $opts{'-dRadius'} || ($R * .1);
+    ($xorg, $yorg) = ($R + $r, $R);
+
+    $xorg += $sb;
+    $font->{'post'}->read;
+    $font->{'glyf'}->read;
+    for ($i = 0; $i < $numc; $i++)
+    {
+        my ($pxorg, $pyorg) = ($xorg + $R * cos(2 * $PI * $i / $numc),
+                                    $yorg + $R * sin(2 * $PI * $i / $numc));
+        for ($j = 0; $j < $nump; $j++)
+        {
+            push (@{$glyph->{'x'}}, int ($pxorg + ($j & 1 ? 1/cos(2*$PI/$nump) : 1) * $r * cos(2 * $PI * $j / $nump)));
+            push (@{$glyph->{'y'}}, int ($pyorg + ($j & 1 ? 1/cos(2*$PI/$nump) : 1) * $r * sin(2 * $PI * $j / $nump)));
+            push (@{$glyph->{'flags'}}, $j & 1 ? 0 : 1);
+        }
+        push (@{$glyph->{'endPoints'}}, $#{$glyph->{'x'}});
+    }
+    $glyph->{'numberOfContours'} = $#{$glyph->{'endPoints'}} + 1;
+    $glyph->{'numPoints'} = $#{$glyph->{'x'}} + 1;
+    $glyph->update;
+    $numg = $font->{'maxp'}{'numGlyphs'};
+    $font->{'maxp'}->read->{'numGlyphs'}++;
+
+    $font->{'hmtx'}{'advance'}[$numg] = int($xorg + $R + $r + $sb + .5);
+    $font->{'hmtx'}{'lsb'}[$numg] = int($xorg - $R - $r + .5);
+    $font->{'loca'}{'glyphs'}[$numg] = $glyph;
+    $cmap->{'val'}{$uid} = $numg if ($cmap);
+    $font->{'post'}{'VAL'}[$numg] = $pname;
+    delete $font->{'hdmx'};
+    delete $font->{'VDMX'};
+    delete $font->{'LTSH'};
+    
+    $font->tables_do(sub {$_[0]->dirty;});
+    $font->update;
+    return ($numg - 1);
+}
+
+
 1;
 
 =head1 BUGS

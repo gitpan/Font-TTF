@@ -1,4 +1,4 @@
-
+#! perl
 # 1.1   MJPH    13-AUG-1999     Add U+00B7 and reverse mappings as well
 
 use Font::TTF::Font;

@@ -1,12 +1,13 @@
+#! perl
 use Font::TTF::Font;
 require 'getopts.pl';
 
-Getopts("c:rs");
+Getopts("c:rsu");
 
-unless (defined $opt_c && defined $ARGV[1])
+unless (defined $opt_c && defined $ARGV[1] && !(defined $opt_s && defined $opt_u) )
 {
     die <<'EOT';
-    TTFRemap -c file [-r] [-s] <infile> <outfile>
+    TTFRemap -c file [-r] [-s | -u] <infile> <outfile>
 Remaps the MS cmap of a font without removing any glyphs. Updates the OS/2
 table according to first and last char of new cmap. The changes file consists
 of lines of the form:
@@ -19,6 +20,7 @@ in the output cmap.
 
     -r      Replace (copy the old cmap before mapping)
     -s      Convert to symbol encoding
+    -u      Convert to UGL encoding
 EOT
 }
 
@@ -37,7 +39,7 @@ if ($opt_r)
 else 
 { 
 	$s = {};
-	$cmin = 0xFFFF;
+	$cmin = 0x1FFFFFF;
 	$cmax = 0;
 }
 while (<INFILE>)
@@ -66,8 +68,12 @@ foreach $c (@{$f->{'cmap'}{'Tables'}})
 {
     $c->{'val'} = $s if ($c->{'Platform'} == 0 || $c->{'Platform'} == 3
         || ($c->{'Platform'} == 2 && $c->{'Encoding'} == 1));
-    $c->{'Encoding'} = 0 if ($c->{'Platform'} == 3 && $opt_s);
-    $has_surr = 1 if ($c->{'Platform'} == 3 && $c->{'Encoding'} == 10);
+    if ($c->{'Platform'} == 3)
+    {
+        $c->{'Encoding'} = 0 if $opt_s;
+        $c->{'Encoding'} = 1 if $opt_u;
+        $has_surr = 1 if $c->{'Encoding'} == 10;
+    }
 }
 
 if ($opt_s)
@@ -90,7 +96,29 @@ if ($opt_s)
     $v->{'ulCodePageRange1'} = 0x80000000;
     $v->{'ulCodePageRange2'} = 0;
 }
-elsif ($cmax > 0xFFFF && !$has_surr)
+
+if ($opt_u)
+{
+    my ($n, $n1);
+    
+    $n = $f->{'name'}->read;
+    foreach $n1 (@{$n->{'strings'}})
+    {
+        if (defined $n1->[3][0])
+        {
+            $n1->[3][1] = $n1->[3][0];
+            undef $n1->[3][0];
+        }
+    }
+    $v->{'ulUnicodeRange1'} = 0x00000003;
+    $v->{'ulUnicodeRange2'} = 0;
+    $v->{'ulUnicodeRange3'} = 0;
+    $v->{'ulUnicodeRange4'} = 0;
+    $v->{'ulCodePageRange1'} = 0x00000001;
+    $v->{'ulCodePageRange2'} = 0;
+}
+
+if ($cmax > 0xFFFF && !$has_surr)
 {
     push (@{$f->{'cmap'}{'Tables'}}, {
         'Platform' => 3,

@@ -50,9 +50,9 @@ AR_STATIC_ARGS = cr
 NAME = Font::TTF
 DISTNAME = Font-TTF
 NAME_SYM = Font_TTF
-VERSION = 0.24
-VERSION_SYM = 0_24
-XS_VERSION = 0.24
+VERSION = 0.26
+VERSION_SYM = 0_26
+XS_VERSION = 0.26
 INST_BIN = blib\bin
 INST_EXE = blib\script
 INST_LIB = blib\lib
@@ -205,7 +205,8 @@ TO_INST_PM = lib/Font/TTF/AATKern.pm \
 	lib/Font/TTF/Utils.pm \
 	lib/Font/TTF/Vhea.pm \
 	lib/Font/TTF/Vmtx.pm \
-	lib/Font/TTF/XMLparse.pm
+	lib/Font/TTF/XMLparse.pm \
+	lib/ttfmod.pl
 
 PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\Kern\ClassArray.pm \
@@ -235,10 +236,10 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\OS_2.pm \
 	lib/Font/TTF/Ttc.pm \
 	$(INST_LIB)\Font\TTF\Ttc.pm \
-	lib/Font/TTF/Fmtx.pm \
-	$(INST_LIB)\Font\TTF\Fmtx.pm \
 	lib/Font/TTF/Name.pm \
 	$(INST_LIB)\Font\TTF\Name.pm \
+	lib/Font/TTF/Fmtx.pm \
+	$(INST_LIB)\Font\TTF\Fmtx.pm \
 	lib/Font/TTF/Delta.pm \
 	$(INST_LIB)\Font\TTF\Delta.pm \
 	lib/Font/TTF/Kern/CompactClassArray.pm \
@@ -247,10 +248,10 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\Utils.pm \
 	lib/Font/TTF/Mort.pm \
 	$(INST_LIB)\Font\TTF\Mort.pm \
-	lib/Font/TTF/Loca.pm \
-	$(INST_LIB)\Font\TTF\Loca.pm \
 	lib/Font/TTF/Fpgm.pm \
 	$(INST_LIB)\Font\TTF\Fpgm.pm \
+	lib/Font/TTF/Loca.pm \
+	$(INST_LIB)\Font\TTF\Loca.pm \
 	lib/Font/TTF/Kern/Subtable.pm \
 	$(INST_LIB)\Font\TTF\Kern\Subtable.pm \
 	lib/Font/TTF/GPOS.pm \
@@ -263,10 +264,10 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\Ttopen.pm \
 	lib/Font/TTF/Manual.pod \
 	$(INST_LIB)\Font\TTF\Manual.pod \
-	lib/Font/TTF/Prop.pm \
-	$(INST_LIB)\Font\TTF\Prop.pm \
 	lib/Font/TTF/Cmap.pm \
 	$(INST_LIB)\Font\TTF\Cmap.pm \
+	lib/Font/TTF/Prop.pm \
+	$(INST_LIB)\Font\TTF\Prop.pm \
 	lib/Font/TTF/LTSH.pm \
 	$(INST_LIB)\Font\TTF\LTSH.pm \
 	lib/Font/TTF/Mort/Subtable.pm \
@@ -291,14 +292,14 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\Glyf.pm \
 	lib/Font/TTF/Mort/Ligature.pm \
 	$(INST_LIB)\Font\TTF\Mort\Ligature.pm \
+	lib/Font/TTF/GSUB.pm \
+	$(INST_LIB)\Font\TTF\GSUB.pm \
 	lib/Font/TTF/Hdmx.pm \
 	$(INST_LIB)\Font\TTF\Hdmx.pm \
 	lib/Font/TTF/AATKern.pm \
 	$(INST_LIB)\Font\TTF\AATKern.pm \
 	lib/Font/TTF/Coverage.pm \
 	$(INST_LIB)\Font\TTF\Coverage.pm \
-	lib/Font/TTF/GSUB.pm \
-	$(INST_LIB)\Font\TTF\GSUB.pm \
 	lib/Font/TTF/Prep.pm \
 	$(INST_LIB)\Font\TTF\Prep.pm \
 	lib/Font/TTF/Mort/Insertion.pm \
@@ -313,6 +314,8 @@ PM_TO_BLIB = lib/Font/TTF/Kern/ClassArray.pm \
 	$(INST_LIB)\Font\TTF\Font.pm \
 	lib/Font/TTF/Feat.pm \
 	$(INST_LIB)\Font\TTF\Feat.pm \
+	lib/ttfmod.pl \
+	$(INST_LIB)\ttfmod.pl \
 	lib/Font/TTF/Kern.pm \
 	$(INST_LIB)\Font\TTF\Kern.pm \
 	lib/Font/TTF/Glyph.pm \
@@ -627,26 +630,26 @@ realclean purge ::  clean
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Bsln.pm $(INST_LIB)\Font\TTF\Post.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Maxp.pm $(INST_LIB)\Font\TTF\Cvt_.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\OS_2.pm $(INST_LIB)\Font\TTF\Ttc.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Fmtx.pm $(INST_LIB)\Font\TTF\Name.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Name.pm $(INST_LIB)\Font\TTF\Fmtx.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Delta.pm $(INST_LIB)\Font\TTF\Kern\CompactClassArray.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Utils.pm $(INST_LIB)\Font\TTF\Mort.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Loca.pm $(INST_LIB)\Font\TTF\Fpgm.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Fpgm.pm $(INST_LIB)\Font\TTF\Loca.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Kern\Subtable.pm $(INST_LIB)\Font\TTF\GPOS.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\OldMort.pm $(INST_LIB)\Font\TTF\Vhea.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Ttopen.pm $(INST_LIB)\Font\TTF\Manual.pod
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Prop.pm $(INST_LIB)\Font\TTF\Cmap.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Cmap.pm $(INST_LIB)\Font\TTF\Prop.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\LTSH.pm $(INST_LIB)\Font\TTF\Mort\Subtable.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Hmtx.pm $(INST_LIB)\Font\TTF\AATutils.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Kern\OrderedList.pm $(INST_LIB)\Font\TTF\Kern\StateTable.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Fdsc.pm $(INST_LIB)\Font\TTF\XMLparse.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\OldCmap.pm $(INST_LIB)\Font\TTF\Table.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Glyf.pm $(INST_LIB)\Font\TTF\Mort\Ligature.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Hdmx.pm $(INST_LIB)\Font\TTF\AATKern.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Coverage.pm $(INST_LIB)\Font\TTF\GSUB.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\GSUB.pm $(INST_LIB)\Font\TTF\Hdmx.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\AATKern.pm $(INST_LIB)\Font\TTF\Coverage.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Prep.pm $(INST_LIB)\Font\TTF\Mort\Insertion.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Mort\Contextual.pm $(INST_LIB)\Font\TTF\GDEF.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\PSNames.pm $(INST_LIB)\Font\TTF\Font.pm
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Feat.pm $(INST_LIB)\Font\TTF\Kern.pm
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Feat.pm $(INST_LIB)\ttfmod.pl $(INST_LIB)\Font\TTF\Kern.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Glyph.pm $(INST_LIB)\Font\TTF\Changes
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_LIB)\Font\TTF\Hhea.pm $(INST_LIB)\Font\TTF\Segarr.pm
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_rf Makefile Makefile.old
@@ -890,7 +893,7 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd:
-	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,24,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
+	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,26,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
 
 # --- MakeMaker pm_to_blib section:
 

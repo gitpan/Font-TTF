@@ -142,29 +142,27 @@ sub update
     $hmtx = $self->{' PARENT'}{'hmtx'}->read;
     
     $self->{' PARENT'}{'loca'}->update;
-    unless ($hmtx->update)              # if we updated, then the flags will be set anyway.
+    $hmtx->update;              # if we updated, then the flags will be set anyway.
+    $lsbx = 1;
+    for ($i = 0; $i < $num; $i++)
     {
-        $lsbx = 1;
-        for ($i = 0; $i < $num; $i++)
-        {
-            $loc = $self->{' PARENT'}{'loca'}{'glyphs'}[$i];
-            next unless defined $loc;
-            $loc->read;
-            $xMin = $loc->{'xMin'} if ($loc->{'xMin'} < $xMin || $i == 0);
-            $yMin = $loc->{'yMin'} if ($loc->{'yMin'} < $yMin || $i == 0);
-            $xMax = $loc->{'xMax'} if ($loc->{'xMax'} > $xMax);
-            $yMax = $loc->{'yMax'} if ($loc->{'yMax'} > $yMax);
-            $lsbx &= ($loc->{'xMin'} == $hmtx->{'lsb'}[$i]);
-        }
-        $self->{'xMin'} = $xMin;
-        $self->{'yMin'} = $yMin;
-        $self->{'xMax'} = $xMax;
-        $self->{'yMax'} = $yMax;
-        if ($lsbx)
-        { $self->{'flags'} |= 2; }
-        else
-        { $self->{'flags'} &= ~2; }
+        $loc = $self->{' PARENT'}{'loca'}{'glyphs'}[$i];
+        next unless defined $loc;
+        $loc->read->update_bbox;
+        $xMin = $loc->{'xMin'} if ($loc->{'xMin'} < $xMin || $i == 0);
+        $yMin = $loc->{'yMin'} if ($loc->{'yMin'} < $yMin || $i == 0);
+        $xMax = $loc->{'xMax'} if ($loc->{'xMax'} > $xMax);
+        $yMax = $loc->{'yMax'} if ($loc->{'yMax'} > $yMax);
+        $lsbx &= ($loc->{'xMin'} == $hmtx->{'lsb'}[$i]);
     }
+    $self->{'xMin'} = $xMin;
+    $self->{'yMin'} = $yMin;
+    $self->{'xMax'} = $xMax;
+    $self->{'yMax'} = $yMax;
+    if ($lsbx)
+    { $self->{'flags'} |= 2; }
+    else
+    { $self->{'flags'} &= ~2; }
     $self;
 }
 
