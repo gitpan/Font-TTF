@@ -2,12 +2,22 @@
 
 Announcing:
 
-Solution to the Unix problem. All files should now be Unix like, much to the
-relief of all Unix users. Windows users shouldn't notice any difference if
-their tar expander is smart (ala WinZip)
+After a long wait, Name tables now try to return UTF8 strings where possible.
+Since this is liable to break old code, the default behaviour is non-utf8, but
+this will change soon.
 
-Note: There are significant changes with this release which may stop your existing
-scripts working. See Changes (at the bottom of this file) for details.
+If C<$Font::TTF::Name::utf8> is set to 1, strings will be stored as UTF8 wherever
+possible. The method C<is_utf8> can be used to find out if a string in a particular
+platform and encoding will be returned as UTF8. Unicode strings are always
+converted if utf8 is requested. Otherwise, strings are stored according to platform:
+
+    ***WARNING NON-UTF8 is deprecated and utf8 strings will become the default***
+
+As of a later version, you will have to set <$Font::TTF::Name::utf8> to 0 to get
+old behaviour.
+
+Solution to the installation problem for users without make. Use pmake instead.
+Wherever you see the command: make, in this document, type: pmake instead.
 
 =head1 Introduction
 
@@ -70,6 +80,13 @@ TTFWIDTH        Find the centre of every glyph in a font and print report
 
 =head1 Installation
 
+If you have received this package as part of an Activestate PPM style .zip file
+then type
+
+    ppm install Font-TTF.ppd
+
+Otherwise.
+
 To configure this module, cd to the directory that contains this README file
 and type the following.
 
@@ -89,33 +106,11 @@ install by typing:
 
     make install
 
+To tidy up, type:
+
+    make realclean
+
 =head1 CHANGES
-
-=head2 Cmap
-
-With version 0.1 the structure of the way cmaps are stored has changed. If you are
-using the internal structure of a cmap, you should read this.
-
-Previously a cmap was stored using a segmented array structure which was somewhat
-cumbersome to use. This has changed, the mechanism is now a simple hash. Thus to
-look-up a unicode value all you need say is:
-
-    $f->{'cmap'}->find_ms->{'val'}{$unicode}
-
-and you can change the value in a cmap by assigning to this array. There is nothing
-more to be done.
-
-If you have a script you do not want to change and would like the previous module
-used instead, add the following line to the start of your script:
-
-    Font::TTF::Font->AddTable('cmap', 'Font::TTF::OldCmap');
-
-which will use the OldCmap module instead of the new one, and this will continue
-to use the Font::TTF::Segarr. Notice that OldCmap is deprecated and will not be
-supported and may disappear in future releases.
-
-I hope the much easier way of interacting with cmaps offsets any hassle that this
-change now may cause.
 
 =head2 Future Changes
 

@@ -21,6 +21,8 @@ the coverage field.
 
 The instance variables for a kerning table are relatively straightforward.
 
+=over 4
+
 =item Version
 
 Version number of the kerning table
@@ -87,6 +89,8 @@ Number of left classes
 =item num_right
 
 Number of right classes
+
+=back
 
 =back
 

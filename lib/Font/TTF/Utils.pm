@@ -264,8 +264,8 @@ sub TTF_bininfo
 
     $range = 1;
     for ($select = 0; $range <= $num; $select++)
-    { $range <<= 1; }
-    $select--; $range >>= 1;
+    { $range *= 2; }
+    $select--; $range /= 2;
     $range *= $block;
 
     $shift = $num * $block - $range;
@@ -286,6 +286,7 @@ sub TTF_word_utf8
     my ($res, $i);
     my (@dat) = unpack("n*", $str);
 
+    return pack("U*", @dat) if ($^V ge v5.6.0);
     for ($i = 0; $i <= $#dat; $i++)
     {
         my ($dat) = $dat[$i];
@@ -321,6 +322,7 @@ sub TTF_utf8_word
     my ($str) = @_;
     my ($res);
 
+    return pack("n*", unpack("U*", $str)) if ($^V ge v5.6.0);
     $str = "$str";              # copy $str
     while (length($str))        # Thanks to Gisle Aas for some of his old code
     {
@@ -346,8 +348,6 @@ sub TTF_utf8_word
     $res;
 }
             
-    
-
 1;
 
 =head1 BUGS

@@ -229,7 +229,7 @@ sub new
 
 Reads the header component of the glyph (bounding box, etc.) and also the
 glyph content, but into a data field rather than breaking it down into
-its constituent structures. Use L<read_dat> for this.
+its constituent structures. Use read_dat for this.
 
 =cut
 

@@ -98,9 +98,11 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.16;    # MJPH      26-APR-2000     Mark read tables as read, tidy up POD
-# $VERSION = 0.15;    # MJPH        5-FEB-2000     Ensure right versions released
-# $VERSION = 0.14;    # MJPH       11-SEP-1999     Sort out Unixisms, agian!
+$VERSION = 0.18;    # MJPH      21-JUL-2000     Debug Utils::TTF_bininfo
+# $VERSION = 0.17;    # MJPH      16-JUN-2000     Add utf8 support to names
+# $VERSION = 0.16;    # MJPH      26-APR-2000     Mark read tables as read, tidy up POD
+# $VERSION = 0.15;    # MJPH       5-FEB-2000     Ensure right versions released
+# $VERSION = 0.14;    # MJPH      11-SEP-1999     Sort out Unixisms, agian!
 # $VERSION = 0.13;    # MJPH       9-SEP-1999     Add empty, debug update_bbox
 # $VERSION = 0.12;    # MJPH      22-JUL-1999     Add update_bbox
 # $VERSION = 0.11;    # MJPH       7-JUL-1999     Don't store empties in cmaps

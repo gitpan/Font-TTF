@@ -87,3 +87,22 @@ Various changes to reduce warnings
 
 * 0.16
 
+** Install
+        add pmake support
+
+** glyph
+        tidy up pod
+
+** kern
+        tidy up pod
+
+** name
+        add utf8 support
+
+* 0.17
+
+** Utils
+        Debug TTF_bininfo >>= seems to have stopped working!
+        
+* 0.18
+

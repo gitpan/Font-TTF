@@ -7,6 +7,7 @@
 # 1.1   MJPH    22-MAR-1998     Add -f support
 # 1.2   MJPH    11-JUN-1999     Add -t support
 # 1.3   MJPH     9-AUG-1999     Fix -d glob
+# 1.4   MJPH    17-FEB-2000     Fix typo for type 1 tables
 
 require 'ttfmod.pl';
 require 'getopts.pl';
@@ -89,7 +90,7 @@ sub hackos2
         if ($ver == 1)
             {
             read(INFILE, $dat1, 8);
-            $dat .= $dat;
+            $dat .= $dat1;
             }
         elsif (defined $opt_c)
             {

@@ -31,12 +31,14 @@ EOT
 }
 
 $f = Font::TTF::Font->open($ARGV[0]);
-$f->{'cmap'}->read;
+$f->{'cmap'}->read->{' isDirty'} = 1;
 
 copy_cmap($f, $opt_m, 0x0080, 0x20AC);
 copy_cmap($f, 0, 0x008E, 0x017D);
 copy_cmap($f, 0, 0x009E, 0x017E);
 copy_cmap($f, 0, 0x00B7, 0x2219);
+
+$f->{'OS/2'}->read->update;
 
 $f->out($ARGV[1]);
 
