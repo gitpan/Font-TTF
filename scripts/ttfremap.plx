@@ -1,6 +1,3 @@
-
-# This line could cause ferment in the ranks
-
 use Font::TTF::Font;
 require 'getopts.pl';
 
@@ -28,11 +25,10 @@ $f = Font::TTF::Font->open($ARGV[0]);
 $f->{'cmap'}->read;
 $f->{'OS/2'}->read;                     # we need to update this
 
-# Hmm what about 1,0 ISO tables as well?
 $t = $f->{'cmap'}->find_ms || die "This font has no MS cmap table";
 
 $o = $t->{'val'};                       # Get the segarr to copy from
-$s = Font::TTF::Segarr->new;
+$s = {}
 
 while (<INFILE>)
 {
@@ -49,19 +45,13 @@ while (<INFILE>)
         push(@addr, hex($&));
     }
 
-    $s->add_segment($addr[2], 0, $o->at($addr[0], $addr[1] - $addr[0] + 1));
+    map {$s->{$addr[2] + $_} = $o->{$addr[1] + $_}} (0 .. ($addr[1] - $addr[0] + 1));
 }
 
 close(INFILE);
 
 # now we really cheat
-$s->add_segment(0xffff, 0, 0);      # Make sure that there is a value for 0xffff to keep MS happy
 $t->{'val'} = $s;                   # Remove old cmap and replace with new
-$f->{'cmap'}{' isDirty'} = 1;
-
-$f->{'OS/2'}->update;               # new first and last for OS/2
 
 $f->out($ARGV[1]);
 
-__END__
-:endofperl

@@ -40,5 +40,3 @@ if (defined $f->{'kern'} && $f->{'kern'}->read->{'tables'}[0]{'type'} == 0)
 
 $f->out($ARGV[1]);
 
-__END__
-:endofperl

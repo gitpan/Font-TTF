@@ -562,8 +562,8 @@ sub update_bbox
             my ($gnx, $gny, $gxx, $gxy);
             my ($sxx, $sxy, $syx, $syy);
             
-            $compg = $self->{' PARENT'}{'loca'}{'glyphs'}[$comp->{'glyph'}]->update_bbox;
-            ($gnx, $gny, $gxx, $gxy) = @{$compg}{'xMin', 'xMax', 'yMin', 'yMax'};
+            $compg = $self->{' PARENT'}{'loca'}{'glyphs'}[$comp->{'glyph'}]->read->update_bbox;
+            ($gnx, $gny, $gxx, $gxy) = @{$compg}{'xMin', 'yMin', 'xMax', 'yMax'};
             if (defined $comp->{'scale'})
             {
                 ($sxx, $sxy, $syx, $syy) = @{$comp->{'scale'}};
@@ -571,6 +571,12 @@ sub update_bbox
                                             $gnx*$sxy+$gny*$syy + $comp->{'args'}[1],
                                             $gxx*$sxx+$gxy*$syx + $comp->{'args'}[0],
                                             $gxx*$sxy+$gxy*$syy + $comp->{'args'}[1]);
+            } elsif ($comp->{'args'}[0] || $comp->{'args'}[1])
+            {
+                $gnx += $comp->{'args'}[0];
+                $gny += $comp->{'args'}[1];
+                $gxx += $comp->{'args'}[0];
+                $gxy += $comp->{'args'}[1];
             }
             $maxx = $gxx if $gxx > $maxx;
             $minx = $gnx if $gnx < $minx;
@@ -621,6 +627,24 @@ sub maxInfo
     }
     @res;
 }
+
+=head2 $g->empty
+
+Empties the glyph of all information to the level of not having been read.
+Useful for saving memory in apps with many glyphs being read
+
+=cut
+
+sub empty
+{
+    my ($self) = @_;
+    my (%keep) = map {$_ => 1} ('LOC', 'OUTLOC', ' PARENT', 'INFILE', 'BASE',
+                                'OUTLEN', 'LEN');
+    map {delete $self->{$_} unless $keep{$_}} keys %$self;
+    
+    $self;
+}
+        
 
 1;
 

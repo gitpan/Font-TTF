@@ -100,6 +100,3 @@ sub getinfo
     ($numhmet, $maxadv);
 }
 
-__END__
-:end
-

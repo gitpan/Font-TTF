@@ -9,14 +9,15 @@ if ($ARGV[0] =~ /^\-@/oi)
     while (<CFGFILE>)
     { chomp; unshift (ARGV, $_); }
 }
-Getopt("e:m:p:t:");
+Getopt("e:m:p:t:x");
 
 $VERSION = 1.0;     # MJPH  26-DEB-1999     Original
 
 unless (defined $ARGV[0] && defined $opt_e)
 {
     die <<'EOT';
-    ttfenc [-e enc_file] [-m mapping_file] [-p map_file] [-t tfm_file] font.ttf
+    ttfenc [-e enc_file] [-m mapping_file] [-p map_file] [-t tfm_file]
+           [-x] font.ttf
     ttfenc -@config_file font.ttf
     
 Creates a Postscript mapping file for the given font according to the 8-bit
@@ -29,6 +30,7 @@ entry is made, either. Requires ttf2afm and afm2tfm to run.
     -p map_file         The PDFTeX .map file in which to add an entry for this
                         font [OPTIONAL - absent, no entry added]
     -t tfm_file         The name and where to store the .tfm file
+    -x                  Disable TeX postscript name correction
     -@config_file       Specifies a file to read command line parameters from
 
 E.g.
@@ -44,6 +46,16 @@ Create .tfm, .afm, .enc and install the files in the appropriate places. (The
 
 EOT
 }
+
+%texCorrect = (
+    'mu1' => 'mu',
+    'summation' => 'Sigma',
+    'product' => 'Pi',
+    'increment' => 'Delta',
+    'middot' => 'periodcentered',
+    'overscore' => 'macron',
+    'dslash' => 'dmacron'
+    );
 
 $base = $ARGV[0];
 $base =~ s/(.*[\\\/])?(.*)\.ttf/$2/oi;
@@ -71,8 +83,12 @@ print "/TeXBase1Encoding [\n";
 
 for ($i = 0; $i < 256; $i++)
 {
+    my ($name);
+    
     printf "%% 0x%02X\n", $i unless ($i & 15);
-    print "    /" . $font->{'post'}{'VAL'}[$font->{'cmap'}->ms_lookup($map->[$i])];
+    $name = $font->{'post'}{'VAL'}[$font->{'cmap'}->ms_lookup($map->[$i])];
+    $name = $texCorrect{$name} if (!$opt_x && defined $texCorrect{$name});
+    print "    /$name";
     print "\n" if ($i & 3) == 3;
 }
 
@@ -133,5 +149,3 @@ sub read_UniMap
     $res;
 }
 
-__END__
-:endofperl

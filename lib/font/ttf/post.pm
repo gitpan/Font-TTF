@@ -418,7 +418,7 @@ mu1
 partialdiff
 summation
 product
-mu
+pi
 integral
 ordfeminine
 ordmasculine

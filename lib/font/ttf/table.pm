@@ -167,6 +167,24 @@ sub update
 { $_[0]{' isDirty'} = 1 if $_[0]{' isDirty'} > 1; $_[0]; }
 
 
+=head2 $t->empty
+
+Clears a table of all data to the level of not having been read
+
+=cut
+
+sub empty
+{
+    my ($self) = @_;
+    my (%keep);
+
+    foreach (qw(INFILE LENGTH OFFSET CSUM PARENT))
+    { $keep{" $_"} = 1; }
+
+    map {delete $self->{$_} unless $keep{$_}} keys %$self;
+    $self;
+}
+
 1;
 
 =head1 BUGS

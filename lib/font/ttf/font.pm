@@ -98,7 +98,8 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.12;    # MJPH      22-JUL-1999     Add update_bbox
+$VERSION = 0.13;    # MJPH       9-SEP-1999     Add empty, debug update_bbox
+# $VERSION = 0.12;    # MJPH      22-JUL-1999     Add update_bbox
 # $VERSION = 0.11;    # MJPH       7-JUL-1999     Don't store empties in cmaps
 # $VERSION = 0.10;    # MJPH      21-JUN-1999     Use IO::File
 # $VERSION = 0.09;    # MJPH       9-JUN-1999     Add 5.004 require, minor tweeks in cmap

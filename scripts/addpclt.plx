@@ -210,5 +210,3 @@ sub make_pclt
     ($len, $csum);
 }
     
-__END__
-:endofperl

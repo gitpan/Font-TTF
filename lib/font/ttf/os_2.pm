@@ -152,15 +152,17 @@ cmap.
 sub update
 {
     my ($self) = @_;
-    my ($map, $temp);
+    my ($map, $temp, @keys);
 
     return undef unless $self->{' PARENT'}{'cmap'}{' isDirty'};
     $self->{' PARENT'}{'cmap'}->update;
     $map = $self->{' PARENT'}{'cmap'}->find_ms || return undef;
 
-    $self->{'usFirstCharIndex'} = $map->{'val'}[0]->{'START'};
+    @keys = sort {$a <=> $b} keys %{$map->{'val'}};
+
+    $self->{'usFirstCharIndex'} = $keys[0];
     $temp = $map->{'val'}[$#{$map->{'val'}} - 1];
-    $self->{'usLastCharIndex'} = $temp->{'START'} + $temp->{'LEN'} - 1;
+    $self->{'usLastCharIndex'} = $keys[-1];
     $self;
 }
 

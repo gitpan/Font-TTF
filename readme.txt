@@ -21,6 +21,8 @@ ttfenc          Create .enc, .afm, .tfm and .map entry for a ttf file based on
                 Unicode rather than postscript. Requires afm2tfm and ttf2afm.
 zerohyph        Create a zero width hyphen in place of the normal hyphen
 ttfremap        Allows creation of new MS cmap based on old one.
+psfix           Enforces Adobe Postscript naming conventions based on Unicode
+                cmap
 
 Any suggestions, improvements, additions, subclasses, etc. would be gratefully
 received and probably included in a future release. Please send them to me.

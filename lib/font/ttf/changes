@@ -32,3 +32,31 @@ Various changes to reduce warnings
         Add update_bbox
         Do full glyph writes if loca read rather than glyf read
         Get glyph update working usefully. Clarify glyf->read
+
+* 0.13
+
+** glyph
+        Debug update_bbox for compound glyphs
+        Add empty() to clear to unread state (allows apps to save memory)
+
+** OS/2
+        update update() to account for new cmap structure
+
+** Post
+        Correct mu to pi in Postscript name list. The list now follows the
+        MS convention for good or ill.
+
+** Table
+        Add empty() to clear a table to its unread state
+
+** Scripts
+*** psfix
+        Added. Creates Post table based on cmap information
+
+*** eurofix 
+        Added bullet hacking and generally backwards, forwards, all
+        ways mapping.
+
+*** ttfenc
+        Now supports the difference between MS post name list and TeXs
+

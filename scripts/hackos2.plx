@@ -5,18 +5,20 @@
 # 1.001 MJPH    05-AUG-1997     Fix &makestr() to work properly
 # 1.002 MJPH    06-AUG-1997     Add -d & -q support
 # 1.1   MJPH    22-MAR-1998     Add -f support
+# 1.2   MJPH    11-JUN-1999     Add -t support
+# 1.3   MJPH     9-AUG-1999     Fix -d glob
 
 require 'ttfmod.pl';
 require 'getopts.pl';
-do Getopts("c:d:f:p:qu:");
+do Getopts("c:d:f:p:qt:u:");
 
 $[ = 0;
 if ((defined $opt_d && !defined $ARGV[0]) || (!defined $opt_d && !defined $ARGV[1]))
     {
     die 'HACKOS2 [-c hex] [-d directory] [-f fsSelection] [-p hex] [-q]
-        [-u hex] <infile> <outfile>
+        [-t num] [-u hex] <infile> <outfile>
 
-v1.1.0, 22-MAR-1998  (c) martin_hosken@sil.org
+v1.2.0, 11-JUN-1999  (c) martin_hosken@sil.org
 
 Hacks the OS/2 table of a ttf file copying from infile to outfile.
     -c      change codepage information (a 64 bit hex number)
@@ -27,6 +29,7 @@ Hacks the OS/2 table of a ttf file copying from infile to outfile.
     -p      change panose info
                 (10 bytes of hex in reverse order: 0A090807060504030201)
     -q      Quiet mode (do not list names as they are processed)
+    -t      Sets fsType (embedding) information (decimal)
     -u      change unicode info (a 128 bit hex number)
 
 For example, to convert a Win3.1 ANSI font to Win95 use the following:
@@ -52,10 +55,13 @@ $fns{"OS/2"} = "hackos2";
 
 if (defined $opt_d)
     {
-    foreach $f (@ARGV)
+    foreach $a (@ARGV)
         {
-        print STDERR "$f -> $opt_d/$f\n" unless (defined $opt_q);
-        &ttfmod($f, "$opt_d/$f", *fns);
+        foreach $f (glob($a))
+            {
+            print STDERR "$f -> $opt_d/$f\n" unless (defined $opt_q);
+            &ttfmod($f, "$opt_d/$f", *fns);
+            }
         }
     }
 else
@@ -102,6 +108,8 @@ sub hackos2
 #                pack("NNNN", unpack("LLLL", &makestr($opt_u, 16))); }
     if (defined $opt_f)
         { substr($dat, 62, 2) = &makestr($opt_f, 2, 2); }
+    if (defined $opt_t)
+        { substr($dat, 8, 2) = pack("n", $opt_t); }
     $csum = unpack("%32N", $dat);
     print OUTFILE $dat;
     ($len, $csum);
@@ -143,8 +151,3 @@ sub makestr
     ($res);
     }
 
-__END__
-@REM=('
-:end
-@echo off
-@REM ') if 0 ;
