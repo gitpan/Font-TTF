@@ -1,4 +1,4 @@
-        Perl Module: TTF
+        Perl Module: Font::TTF
 
 =head1 Introduction
 
@@ -56,12 +56,12 @@ TTFWidth.bat    Find the centre of every glyph in a font and print report
 To configure this module, cd to the directory that contains this README file
 and type the following.
 
-    perl Makefile.PL
+    perl makefile.pl
 
 Alternatively, if you plan to install XML::Parser somewhere other than
 your system's perl library directory. You can type something like this:
 
-    perl Makefile.PL PREFIX=/home/me/perl INSTALLDIRS=perl
+    perl makefile.pl PREFIX=/home/me/perl INSTALLDIRS=perl
 
 Then to build you run make.
 

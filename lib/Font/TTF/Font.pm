@@ -94,7 +94,8 @@ use strict;
 use vars qw(%tables $VERSION);
 use Symbol();
 
-$VERSION = 0.03;    #   MJPH     9-MAR-1999     Move to Font::TTF for CPAN
+$VERSION = 0.04;    # MJPH      12-MAR-1999     Tidy up tar ball filename case
+# $VERSION = 0.03;    #   MJPH     9-MAR-1999     Move to Font::TTF for CPAN
 # $VERSION = 0.02;  #   MJPH    12-FEB-1999     Add support for ' nocsum' for DSIGS
 # $VERSION = 0.0001;
 
