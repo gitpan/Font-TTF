@@ -107,7 +107,8 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.21;    # MJPH      23-MAR-2001     Improve Opentype support
+$VERSION = 0.22;    # MJPH      09-APR-2001     Ensure all of AAT stuff included
+# $VERSION = 0.21;    # MJPH      23-MAR-2001     Improve Opentype support
 # $VERSION = 0.20;    # MJPH      13-JAN-2001     Add XML output and some of XML input, AAT & OT tables
 # $VERSION = 0.19;    # MJPH      29-SEP-2000     Add cmap::is_unicode, debug makefile.pl
 # $VERSION = 0.18;    # MJPH      21-JUL-2000     Debug Utils::TTF_bininfo
