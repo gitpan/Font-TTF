@@ -12,7 +12,7 @@
 
 #	ABSTRACT => q[TTF font support for Perl]
 #	AUTHOR => q[martin_hosken@sil.org]
-#	EXE_FILES => [q[scripts/check_attach.plx], q[scripts/eurofix.plx], q[scripts/hackos2.plx], q[scripts/psfix.plx], q[scripts/ttfbuilder.plx], q[scripts/ttfname.plx], q[scripts/ttfremap.plx]]
+#	EXE_FILES => [q[scripts/check_attach.plx], q[scripts/eurofix.plx], q[scripts/hackos2.plx], q[scripts/psfix.plx], q[scripts/ttfbuilder.plx], q[scripts/ttfbuilder.plx.bak], q[scripts/ttfname.plx], q[scripts/ttfremap.plx], q[scripts/ttfremap.plx.bak]]
 #	NAME => q[Font::TTF]
 #	VERSION_FROM => q[lib/Font/TTF/Font.pm]
 #	dist => { TO_UNIX=>q[perl -Mtounix -e "tounix(\"$(DISTVNAME)\")"] }
@@ -50,9 +50,9 @@ AR_STATIC_ARGS = cr
 NAME = Font::TTF
 DISTNAME = Font-TTF
 NAME_SYM = Font_TTF
-VERSION = 0.3
-VERSION_SYM = 0_3
-XS_VERSION = 0.3
+VERSION = 0.31
+VERSION_SYM = 0_31
+XS_VERSION = 0.31
 INST_BIN = blib\bin
 INST_EXE = blib\script
 INST_LIB = blib\lib
@@ -559,34 +559,22 @@ $(INST_SCRIPT)\.exists :: D:\Progs\Perl\lib\CORE\perl.h
 
 	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)
 
-EXE_FILES = scripts/check_attach.plx scripts/eurofix.plx scripts/hackos2.plx scripts/psfix.plx scripts/ttfbuilder.plx scripts/ttfname.plx scripts/ttfremap.plx
+EXE_FILES = scripts/check_attach.plx scripts/eurofix.plx scripts/hackos2.plx scripts/psfix.plx scripts/ttfbuilder.plx scripts/ttfbuilder.plx.bak scripts/ttfname.plx scripts/ttfremap.plx scripts/ttfremap.plx.bak
 
 FIXIN = $(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) \
     -e "system qq[pl2bat.bat ].shift"
 
-pure_all :: $(INST_SCRIPT)\check_attach.plx $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\ttfbuilder.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx $(INST_SCRIPT)\ttfremap.plx
+pure_all :: $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx $(INST_SCRIPT)\ttfremap.plx $(INST_SCRIPT)\ttfbuilder.plx.bak $(INST_SCRIPT)\check_attach.plx $(INST_SCRIPT)\ttfbuilder.plx $(INST_SCRIPT)\ttfremap.plx.bak
 	@$(NOOP)
 
 realclean ::
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\check_attach.plx $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\ttfbuilder.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx $(INST_SCRIPT)\ttfremap.plx
-
-$(INST_SCRIPT)\check_attach.plx: scripts/check_attach.plx Makefile $(INST_SCRIPT)\.exists
-	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\check_attach.plx
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/check_attach.plx $(INST_SCRIPT)\check_attach.plx
-	$(FIXIN) $(INST_SCRIPT)\check_attach.plx
-	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\check_attach.plx
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfname.plx $(INST_SCRIPT)\hackos2.plx $(INST_SCRIPT)\eurofix.plx $(INST_SCRIPT)\psfix.plx $(INST_SCRIPT)\ttfremap.plx $(INST_SCRIPT)\ttfbuilder.plx.bak $(INST_SCRIPT)\check_attach.plx $(INST_SCRIPT)\ttfbuilder.plx $(INST_SCRIPT)\ttfremap.plx.bak
 
 $(INST_SCRIPT)\ttfname.plx: scripts/ttfname.plx Makefile $(INST_SCRIPT)\.exists
 	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfname.plx
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/ttfname.plx $(INST_SCRIPT)\ttfname.plx
 	$(FIXIN) $(INST_SCRIPT)\ttfname.plx
 	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\ttfname.plx
-
-$(INST_SCRIPT)\ttfbuilder.plx: scripts/ttfbuilder.plx Makefile $(INST_SCRIPT)\.exists
-	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfbuilder.plx
-	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/ttfbuilder.plx $(INST_SCRIPT)\ttfbuilder.plx
-	$(FIXIN) $(INST_SCRIPT)\ttfbuilder.plx
-	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\ttfbuilder.plx
 
 $(INST_SCRIPT)\hackos2.plx: scripts/hackos2.plx Makefile $(INST_SCRIPT)\.exists
 	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\hackos2.plx
@@ -611,6 +599,30 @@ $(INST_SCRIPT)\ttfremap.plx: scripts/ttfremap.plx Makefile $(INST_SCRIPT)\.exist
 	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/ttfremap.plx $(INST_SCRIPT)\ttfremap.plx
 	$(FIXIN) $(INST_SCRIPT)\ttfremap.plx
 	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\ttfremap.plx
+
+$(INST_SCRIPT)\ttfbuilder.plx.bak: scripts/ttfbuilder.plx.bak Makefile $(INST_SCRIPT)\.exists
+	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfbuilder.plx.bak
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/ttfbuilder.plx.bak $(INST_SCRIPT)\ttfbuilder.plx.bak
+	$(FIXIN) $(INST_SCRIPT)\ttfbuilder.plx.bak
+	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\ttfbuilder.plx.bak
+
+$(INST_SCRIPT)\check_attach.plx: scripts/check_attach.plx Makefile $(INST_SCRIPT)\.exists
+	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\check_attach.plx
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/check_attach.plx $(INST_SCRIPT)\check_attach.plx
+	$(FIXIN) $(INST_SCRIPT)\check_attach.plx
+	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\check_attach.plx
+
+$(INST_SCRIPT)\ttfbuilder.plx: scripts/ttfbuilder.plx Makefile $(INST_SCRIPT)\.exists
+	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfbuilder.plx
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/ttfbuilder.plx $(INST_SCRIPT)\ttfbuilder.plx
+	$(FIXIN) $(INST_SCRIPT)\ttfbuilder.plx
+	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\ttfbuilder.plx
+
+$(INST_SCRIPT)\ttfremap.plx.bak: scripts/ttfremap.plx.bak Makefile $(INST_SCRIPT)\.exists
+	@$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e rm_f $(INST_SCRIPT)\ttfremap.plx.bak
+	$(PERL) -I$(PERL_ARCHLIB) -I$(PERL_LIB) -MExtUtils::Command -e cp scripts/ttfremap.plx.bak $(INST_SCRIPT)\ttfremap.plx.bak
+	$(FIXIN) $(INST_SCRIPT)\ttfremap.plx.bak
+	-@$(CHMOD) $(PERM_RWX) $(INST_SCRIPT)\ttfremap.plx.bak
 
 
 # --- MakeMaker subdirs section:
@@ -904,7 +916,7 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd:
-	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,3,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
+	@$(PERL) -e "print qq{<SOFTPKG NAME=\"Font-TTF\" VERSION=\"0,31,0,0\">\n}. qq{\t<TITLE>Font-TTF</TITLE>\n}. qq{\t<ABSTRACT>TTF font support for Perl</ABSTRACT>\n}. qq{\t<AUTHOR>martin_hosken\@sil.org</AUTHOR>\n}. qq{\t<IMPLEMENTATION>\n}. qq{\t\t<OS NAME=\"$(OSNAME)\" />\n}. qq{\t\t<ARCHITECTURE NAME=\"MSWin32-x86-multi-thread\" />\n}. qq{\t\t<CODEBASE HREF=\"\" />\n}. qq{\t</IMPLEMENTATION>\n}. qq{</SOFTPKG>\n}" > Font-TTF.ppd
 
 # --- MakeMaker pm_to_blib section:
 

@@ -82,7 +82,7 @@ sub read
 {
     my ($self) = @_;
     my ($dat, $i, $j, $k, $id, @ids, $s);
-    my ($start, $end, $range, $delta, $form, $len, $num, $ver);
+    my ($start, $end, $range, $delta, $form, $len, $num, $ver, $sg);
     my ($fh) = $self->{' INFILE'};
 
     $self->SUPER::read or return $self;
@@ -164,9 +164,9 @@ sub read
             $fh->read($dat, 12 * $num);
             for ($j = 0; $j < $num; $j++)
             {
-                ($start, $end, $s) = unpack("N3", substr($dat, $j * 12, 12));
+                ($start, $end, $sg) = unpack("N3", substr($dat, $j * 12, 12));
                 for ($k = $start; $k <= $end; $k++)
-                { $s->{'val'}{$k} = $s++; }
+                { $s->{'val'}{$k} = $sg++; }
             }
         } elsif ($form == 10)
         {
@@ -206,7 +206,7 @@ to it if found. Returns the table it finds.
 sub find_ms
 {
     my ($self) = @_;
-    my ($i, $s, $alt);
+    my ($i, $s, $alt, $found);
 
     return $self->{' mstable'} if defined $self->{' mstable'};
     $self->read;
@@ -216,10 +216,12 @@ sub find_ms
         if ($s->{'Platform'} == 3)
         {
             $self->{' mstable'} = $s;
-            last if ($s->{'Encoding'} == 1);
+            last if ($s->{'Encoding'} == 10);
+            $found = 1 if ($s->{'Encoding'} == 1);
         } elsif ($s->{'Platform'} == 0 || ($s->{'Platform'} == 2 && $s->{'Encoding'} == 1))
-        { $self->{' mstable'} = $s; }
+        { $alt = $s; }
     }
+    $self->{' mstable'} = $alt unless $found;
     $self->{' mstable'};
 }
 

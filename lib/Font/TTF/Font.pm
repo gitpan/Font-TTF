@@ -118,7 +118,11 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.30;    # MJPH      28-MAY-2002     add updated release
+$VERSION = 0.31;    # MJPH       1-JUL-2002     fix read format 12 cmap (bart@cs.pdx.edu) 
+#                                                 improve surrogate support in ttfremap
+#                                                 fix return warn to return warn,undef
+#                                                 ensure correct indexToLocFormat
+# $VERSION = 0.30;    # MJPH      28-MAY-2002     add updated release
 # $VERSION = 0.29;    # MJPH       9-APR-2002     update ttfbuilder, sort out surrogates
 # $VERSION = 0.28;    # MJPH      13-MAR-2002     update ttfbuilder, add Font::TTF::Cmap::ms_enc()
 # $VERSION = 0.27;    # MJPH       6-FEB-2002     update ttfbuilder, support no fpgm, no more __DATA__
@@ -363,7 +367,7 @@ sub out
 
     unless (ref($fname))
     {
-        $fh = IO::File->new("+>$fname") || return warn "Unable to open $fname";
+        $fh = IO::File->new("+>$fname") || return warn("Unable to open $fname for writing"), undef;
         binmode $fh;
     } else
     { $fh = $fname; }
@@ -443,7 +447,7 @@ sub out
         if (!defined $dir{'head'})
         {                                   # you have to have a head table
             $fh->close();
-            return warn "No 'head' table to output in $fname";
+            return warn("No 'head' table to output in $fname"), undef;
         }
         ($csum, $loc, $len) = unpack("x4NNN", $dir{'head'});
         $fh->seek($loc + 8, 0);
@@ -465,7 +469,7 @@ sub out
         if (!defined $dir{'head'})
         {                                   # you have to have a head table
             $fh->close();
-            return warn "No 'head' table to output in $fname";
+            return warn("No 'head' table to output in $fname"), undef;
         }
         ($csum, $loc, $len) = unpack("x4NNN", $dir{'head'});
         $fh->seek($loc + 8, 0);
@@ -500,7 +504,7 @@ sub out_xml
 
     unless (ref($fname))
     {
-        $fh = IO::File->new("+>$fname") || return warn "Unable to open $fname";
+        $fh = IO::File->new("+>$fname") || return warn("Unable to open $fname"), undef;
         binmode $fh;
     } else
     { $fh = $fname; }

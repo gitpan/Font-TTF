@@ -1,7 +1,7 @@
 package Font::TTF::PSNames;
 
 use strict;
-use vars qw(%names);
+use vars qw(%names %doubles);
 
 %names = (
     '0020' => 'space',
@@ -886,14 +886,24 @@ use vars qw(%names);
     'FB4B' => 'afii57700',
 );
 
+%doubles = (map{$_ => "uni$_"} qw(0394 03A9 0162 2215 00AD 02C9 03BC 2219 00A0 0163));
+
 sub lookup
 {
-    my ($num) = @_;
+    my ($num, $noalt) = @_;
     my ($val) = sprintf("%04X", $num);
 
-    return $names{$val} if (defined $names{$val});
-    return "u$val" unless ($num == 0);
-    return '.notdef';
+    if (defined $names{$val})
+    {
+        return $names{$val} if ($noalt);
+        return $doubles{$val} || $names{$val};
+    }
+    elsif ($num > 0xFFFF)
+    { return "u$val"; }
+    elsif ($num)
+    { return "uni$val"; }
+    else
+    { return ".notdef"; }
 }
 
 1;

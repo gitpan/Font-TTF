@@ -127,14 +127,30 @@ if ($opt_u)
     $v->{'ulCodePageRange2'} = 0;
 }
 
-if ($cmax > 0xFFFF && !$has_surr)
+if ($cmax > 0xFFFF)
 {
     push (@{$f->{'cmap'}{'Tables'}}, {
         'Platform' => 3,
         'Encoding' => 10,
         'Ver' => 0,
         'Format' => 12,
-        'val' => $s});
+        'val' => $s}) unless ($has_surr);
+
+    my $has_uni_table;
+    foreach $c (@{$f->{'cmap'}{'Tables'}})
+    {
+        if ($c->{'Platform'} == 0 && $c->{'Encoding'} == 0) 
+        {
+            $c->{'Format'} = 12;
+            $has_uni_table = 1;
+        }
+    }
+    push (@{$f->{'cmap'}{'Tables'}}, {
+        'Platform' => 0,
+        'Encoding' => 0,
+        'Ver' => 0,
+        'Format' => 12,
+        'val' => $s}) unless ($has_uni_table);
 }
         
 

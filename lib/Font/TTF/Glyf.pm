@@ -68,6 +68,7 @@ sub out
         $loca->[$i]->out($fh);
         $offset += $loca->[$i]{' OUTLEN'};
     }
+    $self->{' PARENT'}{'head'}{'indexToLocFormat'} = ($offset >= 0x20000);
     $self;
 }
 

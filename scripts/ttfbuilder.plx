@@ -8,7 +8,11 @@ use XML::Parser::Expat;
 use Pod::Usage;
 use Getopt::Std;
 
-$VERSION = 0.07;    # MJPH      18-MAR-2002     Support .notdef
+$VERSION = 0.11;    # MJPH      11-JUL-2002     Error message refining
+# $VERSION = 0.10;    # MJPH      24-JUN-2002     add rsb  & lsb tags and -d 16 (overstriking disabling)
+# $VERSION = 0.09;    # MJPH      14-JUN-2002     Fix property output and bad sync in attach.xml
+# $VERSION = 0.08;    # MJPH      16-APR-2002     Change default PS names for .notdef null & CR
+# $VERSION = 0.07;    # MJPH      18-MAR-2002     Support .notdef
 # $VERSION = 0.06;    # MJPH       7-MAR-2002     errors, base glyphs with no outlines, 
 #                                                 properties & notes, symbol fonts, surrogates
 # $VERSION = 0.05;    # MJPH      10-DEC-2001     improve error messages
@@ -37,6 +41,7 @@ attachment point database (attach.xml) and can generate out.xml.
                 1: Don't Auto-create postscript names for component glyphs
                 2: Don't Hack the copyright message (if none set)
                 3: Mark target font as symbol font
+                4: Default to not allowing overstrikes (ensures guard space)
     -h          Help
     -x file     Attachment database to read
     -z file     Attachment database to output
@@ -74,8 +79,9 @@ if (defined $opt_x)
 
         if ($tag eq 'glyph')
         {
-            $gid = $attrs{'GID'} || $c->{'val'}{hex($attrs{'UID'})}
-                || $if->{'post'}{'STRINGS'}{$attrs{'PSName'}};
+            $gid = $c->{'val'}{hex($attrs{'UID'})}
+                || $if->{'post'}{'STRINGS'}{$attrs{'PSName'}}
+                || $attrs{'GID'};
             if (!defined $gid && ($attrs{'PSName'} || $attrs{'UID'}))
             { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'} in $opt_x"); }
             $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
@@ -189,7 +195,7 @@ $xml->setHandlers('Start' => sub {
         unless (($attrs{'PSName'} && ($gid = $if->{'post'}{'STRINGS'}{$attrs{'PSName'}}))
                 || ($attrs{'UID'} && ($gid = $c->{'val'}{hex($attrs{'UID'})}))
                 || ($gid = $attrs{'GID'}) || defined $attrs{'GID'})
-        { $xml->xpcarp("Can't find glyph $attrs{PSName}/U+$attrs{UID} for $tag in $opt_c"); }
+        { $xml->xpcarp("Can't find glyph $attrs{PSName}/U+" . ($attrs{UID} ? $attrs{UID} : "0000") . " for $tag in $opt_c"); }
 
         $aglyph = {
             'gid' => $gid,
@@ -207,8 +213,8 @@ $xml->setHandlers('Start' => sub {
             $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
             $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
         }
-        $aglyph->{'properties'} = {%{$xml_dat[$i]{'properties'}}} if defined $xml_dat[$i]{'properties'};
-        $aglyph->{'notes'} = $xml_dat[$i]{'notes'} if defined $xml_dat[$i]{'notes'};
+        $aglyph->{'properties'} = {%{$xml_dat[$gid]{'properties'}}} if defined $xml_dat[$i]{'properties'};
+        $aglyph->{'notes'} = $xml_dat[$gid]{'notes'} if defined $xml_dat[$i]{'notes'};
 
         if ($tag eq 'attach')                            # position attachment
         {
@@ -265,6 +271,14 @@ $xml->setHandlers('Start' => sub {
     elsif ($tag eq 'advance')
     {
         $curbase->{'adv'} = $attrs{'width'};
+    }
+    elsif ($tag eq 'rsb')
+    {
+        $curbase->{'adv'} = $curbase->{'glyph'}->read->{'xMax'} + $attrs{'width'};
+    }
+    elsif ($tag eq 'lsb')
+    {
+        $curbase->{'lsb'} = $attrs{'width'};
     }
     elsif ($tag eq 'shift')
     {
@@ -330,12 +344,13 @@ $xml->setHandlers('Start' => sub {
     }
     elsif ($tag eq 'glyph')
     {
-        my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p);
+        my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p, $lorg);
 
         foreach $g (@{$curbase->{'glyphs'}})
         {
             resolve_glyph($g, $adv);                    # get absolute position of glyph
             $adv = $g->{'offset'}[0] + $g->{'adv'};
+            $lorg = $g->{'lorg'} if ($g->{'lorg'} < $lorg);
             push (@{$curbase->{'glyph_list'}}, @{$g->{'glyph_list'}});  # compile full glyph list
             if (defined $g->{'bbox'})
             { ($xMin, $yMin, $xMax, $yMax) =
@@ -352,6 +367,15 @@ $xml->setHandlers('Start' => sub {
                 }
                 $curbase->{'points'}{$p} = $g->{'points'}{$p};
             }
+        }
+
+        if ((as_bool($curbase->{'overstrike'}, 1)
+             || (($opt_d & 16) && !defined $curbase->{'overstrike'}))
+            && $lorg < 0)
+        {
+            foreach $g (@{$curbase->{'glyph_list'}})
+            { $g->{'offset'}[0] -= $lorg; }
+            $adv -= $lorg;
         }
 
         if (scalar @{$curbase->{'glyph_list'}} == 1)        # only one glyph?
@@ -405,8 +429,8 @@ $xml->parsefile($opt_c) || die "Can't read $opt_c";
 
 unless ($opt_a)     # only need this if not copying old font anyway.
 {
-    my (@names) = qw(.notdef null CR);
-    # fill in first 3 special glyphs: .notdef null CR
+    my (@names) = qw(.notdef .null nonmarkingreturn);
+    # fill in first 3 special glyphs: .notdef .null nonmarkingreturn
     for ($i = 0; $i < 3; $i++)
     {
         my ($g, $bbox);
@@ -604,6 +628,8 @@ for ($i = 0; $i < $of->{'maxp'}{'numGlyphs'}; $i++)
             print OX "    </point>\n";
         }
     }
+    foreach $p (keys %{$g->{'glyphs'}[0]{'properties'}})
+    { print OX "    <property name=\"$p\" value=\"$g->{'glyphs'}[0]{'properties'}{$p}\"/>\n"; }
     print OX "</glyph>\n";
 }
 
@@ -686,12 +712,12 @@ unless ($opt_d & 1)
 $of->tables_do(sub {$_[0]->dirty});
 $of->update;
 # $of->{'head'}{'flags'} &= ~2;
-$of->out($ARGV[1]) || die "Can't write to $ARGV[1]";
+$of->out($ARGV[1]) || die "Can't write to font file $ARGV[1]. Do you have it installed?";
 
 sub resolve_glyph
 {
     my ($g, $orgx, $orgy, $pathcount) = @_;
-    my ($glyph, $xMin, $yMin, $xMax, $yMax, $c, $p, $adv);
+    my ($glyph, $xMin, $yMin, $xMax, $yMax, $c, $p, $adv, $lorg);
 
     $g->{'pathbase'} = $pathcount;
     $g->{'offset'} = [$g->{'roffset'}[0] + $orgx,
@@ -711,15 +737,22 @@ sub resolve_glyph
         $xMax = $glyph->{'xMax'};
         $yMax = $glyph->{'yMax'};
     }
+
+    $lorg = $xMin - $g->{'lsb'} + $g->{'offset'}[0];
+
     foreach $c (@{$g->{'glyphs'}})
     {
+        my ($lorgt);
         $pathcount = resolve_glyph($c, @{$g->{'offset'}}, $pathcount);
         $adv = $c->{'adv'} if ($c->{'adv'} > $adv);
         ($xMin, $yMin, $xMax, $yMax) = findbox($xMin, $yMin, $xMax, $yMax, $c->{'bbox'}, $c->{'offset'});
+        $lorgt = $c->{'bbox'}[0] - $c->{'lsb'} + $c->{'offset'}[0];
+        $lorg = $lorgt if ($lorgt < $lorg);
         push (@{$g->{'glyph_list'}}, @{$c->{'glyph_list'}});
     }
     $g->{'bbox'} = [$xMin, $yMin, $xMax, $yMax];
     $g->{'adv'} = $adv;
+    $g->{'lorg'} = $lorg;
     return $pathcount;
 }
 
@@ -813,6 +846,19 @@ sub do_name
     }
 }
 
+sub as_bool
+{
+    my ($str, $test) = @_;
+    
+    if ($test)
+    { return ($str eq '1' || $str eq 'true'); }
+    elsif (!defined $test)
+    { return (!defined $str); }
+    else
+    { return ($str eq '0' || $str eq 'false'); }
+}
+
+
 __END__
 
 =head1 TITLE
@@ -857,7 +903,11 @@ file with the following key elements:
 
 This describes a glyph and the attributes allow setting of the postscript name and
 Unicode id for the glyph. The glyph element has children which describe what goes
-into the glyph.
+into the glyph. The C<overstrike> attribute controls whether the resulting glyph
+can be overstriking (i.e. overlap to the left of the origin) or whether it must
+be shifted to the right of the origin. See -d 16 to override the default setting
+to disallow overstrikes. The attribute is a boolean (C<true>, C<false>, C<1>
+or C<0>).
 
 =item base
 
@@ -891,6 +941,16 @@ within the glyph. Thus if an attachment is positioned far enough to the right, i
 may well cause the advance width of the glyph to increase beyond that of the base
 glyph the attachment is on.
 
+=item rsb
+
+This allows the advance of a glyph to be specified in terms of the right side
+bearing rather than an absolute advance value.
+
+=item lsb
+
+In the case where overstrike is disallowed, sets the guard space to the left of
+the glyph.
+
 =item shift
 
 It is also possible to shift glyphs, at least base and attach glyphs. Shifting
@@ -907,57 +967,72 @@ There is one special value for the num attribute, which is C<name>. This causes
 the name of the font (string id 1) and also the full font name (string id 4) to be
 assembled from the font name and style (string id 2).
 
+=item font attributes
+
+Various font attributes can be set from a TTFBuilder configuration file:
+
+    ascent      amount of space needed above the baseline for a glyph
+    descent     space below the baseline needed for a glyph
+    linegap     how much space to put between lines
+    cp          OS/2 codepages field (in binary)
+    coverage    OS/2 Unicode block coverage (in binary)
+    
 =back
 
 The DTD for the configuration file is:
 
     <!ELEMENT font (names?, glyphs)>
     <!ATTLIST font
-        ascent CDATA #IMPLIED
-        descent CDATA #IMPLIED
-        linegap CDATA #IMPLIED
-        cp CDATA #IMPLIED
-        codepage CDATA #IMPLIED>
+        ascent      CDATA #IMPLIED
+        descent     CDATA #IMPLIED
+        linegap     CDATA #IMPLIED
+        cp          CDATA #IMPLIED
+        coverage    CDATA #IMPLIED>
 
     <!ELEMENT names (string)+>
 
     <!ELEMENT string (#PCDATA)>
     <!ATTLIST string
-        num CDATA #REQUIRED
-        pid CDATA #IMPLIED
-        eid CDATA #IMPLIED
-        lid CDATA #IMPLIED>
+        num     CDATA #REQUIRED
+        pid     CDATA #IMPLIED
+        eid     CDATA #IMPLIED
+        lid     CDATA #IMPLIED>
 
     <!ELEMENT glyphs (glyph)+>
 
     <!ELEMENT glyph (property* | note | (advance | base)+)>
     <!ATTLIST glyph
-        PSNAme CDATA #IMPLIED
-        UID    CDATA #IMPLIED
-        GID    CDATA #IMPLIED>
+        PSNAme      CDATA #IMPLIED
+        UID         CDATA #IMPLIED
+        GID         CDATA #IMPLIED
+        overstrike  CDATA #IMPLIED>
 
     <!ELEMENT base (advance | attach | shift)*>
     <!ATTLIST base
-        PSName CDATA #IMPLIED
-        UID    CDATA #IMPLIED
-        GID    CDATA #IMPLIED>
+        PSName  CDATA #IMPLIED
+        UID     CDATA #IMPLIED
+        GID     CDATA #IMPLIED>
 
     <!ELEMENT attach (advance | shift)*>
     <!ATTLIST attach
-        PSName CDATA #IMPLIED
-        UID    CDATA #IMPLIED
-        GID    CDATA #IMPLIED
-        with   CDATA #IMPLIED
-        at     CDATA #IMPLIED>
+        PSName  CDATA #IMPLIED
+        UID     CDATA #IMPLIED
+        GID     CDATA #IMPLIED
+        with    CDATA #IMPLIED
+        at      CDATA #IMPLIED>
 
     <!ELEMENT advance EMPTY>
     <!ATTLIST advance
-        width  CDATA #REQUIRED>
+        width   CDATA #REQUIRED>
+
+    <!ELEMENT rsb EMPTY>
+    <!ATTLIST rsb
+        width   CDATA #REQUIRED>
 
     <!ELEMENT shift EMPTY>
     <!ATTLIST shift
-        x      CDATA #IMPLIED
-        y      CDATA #IMPLIED>
+        x       CDATA #IMPLIED
+        y       CDATA #IMPLIED>
 
     <!ELEMENT property EMPTY>
     <!ATTLIST property
