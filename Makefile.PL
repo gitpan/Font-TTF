@@ -10,7 +10,7 @@ WriteMakefile (
         NAME => "Font::TTF",
         VERSION_FROM => "lib/Font/TTF/Font.pm",
         EXE_FILES => \@scripts,
-        HTMLLIBPODS => {map {my $t = $_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @theselibs},
+#        HTMLLIBPODS => {map {my $t = $_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @theselibs},
 #        HTMLSCRIPTPODS => {map {my $t=$_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @scripts},
         AUTHOR => "martin_hosken\@sil.org",
         ABSTRACT => "TTF font support for Perl",

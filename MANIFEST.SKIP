@@ -1,0 +1,8 @@
+blib/
+\.\$\$\$
+\.tmp
+\.bak
+CVS/
+\.tar
+misc/
+

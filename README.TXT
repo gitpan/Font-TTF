@@ -2,32 +2,31 @@
 
 Announcing:
 
-After a long wait, Name tables now try to return UTF8 strings where possible.
-Since this is liable to break old code, the default behaviour is non-utf8, but
-this will change soon.
+The addition of many new tables including support for the OpenType
+tables: GSUB, GDEF and GPOS and also a bunch of AAT tables. The module
+now also supports XML output and a buggy XML input. All of these new
+features should be considered as Alpha code and particularly the XML
+language is liable to change for some of the more complex table types.
 
-If C<$Font::TTF::Name::utf8> is set to 1, strings will be stored as UTF8 wherever
-possible. The method C<is_utf8> can be used to find out if a string in a particular
-platform and encoding will be returned as UTF8. Unicode strings are always
-converted if utf8 is requested. Otherwise, strings are stored according to platform:
+After a long wait, Name tables now try to return UTF8 strings where
+possible. The deprecation period has now passed and by default the
+Name.pm returns strings as utf8 where possible. See Name.pm for details.
+To get old behaviour, set C<$Font::TTF::Name::utf8> to 0.
 
-    ***WARNING NON-UTF8 is deprecated and utf8 strings will become the default***
-
-As of a later version, you will have to set <$Font::TTF::Name::utf8> to 0 to get
-old behaviour.
-
-Solution to the installation problem for users without make. Use pmake instead.
-Wherever you see the command: make, in this document, type: pmake instead.
+Solution to the installation problem for users on Win32, without make.
+Use pmake instead. Wherever you see the command: make, in this document,
+type: pmake instead.
 
 =head1 Introduction
 
-Perl module for TrueType font hacking. Supports reading, processing and writing
-of the following tables: LTSH, OS/2, PCLT, cmap, cvt, fpgm, glyf, hdmx, head,
-hhea, hmtx, kern, loca, maxp, name, post, prep, vhea, vmtx and the reading and
+Perl module for TrueType font hacking. Supports reading, processing and
+writing of the following tables: GDEF, GPOS, GSUB, LTSH, OS/2, PCLT,
+bsln, cmap, cvt, fdsc, feat, fpgm, glyf, hdmx, head, hhea, hmtx, kern,
+loca, maxp, mort, name, post, prep, prop, vhea, vmtx and the reading and
 writing of all other table types.
 
-In short, you can do almost anything with a standard TrueType font with this
-module. Be Brave!
+In short, you can do almost anything with a standard TrueType font with
+this module. Be Brave!
 
 Also included are the following example scripts:
 
