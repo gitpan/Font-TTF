@@ -8,10 +8,12 @@
 # 1.2   MJPH    11-JUN-1999     Add -t support
 # 1.3   MJPH     9-AUG-1999     Fix -d glob
 # 1.4   MJPH    17-FEB-2000     Fix typo for type 1 tables
+# 1.5   MJPH    19-SEP-2000     Add -n, -x
+# 1.6   MJPH    10-NOV-2000     Add -v
 
 require 'ttfmod.pl';
 require 'getopts.pl';
-do Getopts("c:d:f:p:qt:u:");
+do Getopts("c:d:f:n:p:qt:u:v:x:");
 
 $[ = 0;
 if ((defined $opt_d && !defined $ARGV[0]) || (!defined $opt_d && !defined $ARGV[1]))
@@ -19,7 +21,7 @@ if ((defined $opt_d && !defined $ARGV[0]) || (!defined $opt_d && !defined $ARGV[
     die 'HACKOS2 [-c hex] [-d directory] [-f fsSelection] [-p hex] [-q]
         [-t num] [-u hex] <infile> <outfile>
 
-v1.2.0, 11-JUN-1999  (c) martin_hosken@sil.org
+v1.6.0, 10-NOV-2000  (c) martin_hosken@sil.org
 
 Hacks the OS/2 table of a ttf file copying from infile to outfile.
     -c      change codepage information (a 64 bit hex number)
@@ -27,11 +29,14 @@ Hacks the OS/2 table of a ttf file copying from infile to outfile.
             case <outfile> is not used and <infile> may be a list including
             wildcards.
     -f      fsSelection value (16 bit hex) (e.g. 4240 for Thai fonts)
+    -n      sets usFirstCharIndex given a hex value
     -p      change panose info
                 (10 bytes of hex in reverse order: 0A090807060504030201)
     -q      Quiet mode (do not list names as they are processed)
     -t      Sets fsType (embedding) information (decimal)
     -u      change unicode info (a 128 bit hex number)
+    -v      sets vendor tag to the first 4 chars of the string
+    -x      sets usLastCharIndex given a hex value
 
 For example, to convert a Win3.1 ANSI font to Win95 use the following:
     hackos2 -c01 -u03 old.ttf new.ttf
@@ -111,6 +116,12 @@ sub hackos2
         { substr($dat, 62, 2) = &makestr($opt_f, 2, 2); }
     if (defined $opt_t)
         { substr($dat, 8, 2) = pack("n", $opt_t); }
+    if (defined $opt_n)
+        { substr($dat, 64, 2) = &makestr($opt_n, 2, 2); }
+    if (defined $opt_x)
+        { substr($dat, 66, 2) = &makestr($opt_x, 2, 2); }
+    if (defined $opt_v)
+        { substr($dat, 58, 4) = pack("A4", $opt_v); }
     $csum = unpack("%32N", $dat);
     print OUTFILE $dat;
     ($len, $csum);
@@ -151,4 +162,5 @@ sub makestr
         }
     ($res);
     }
+
 

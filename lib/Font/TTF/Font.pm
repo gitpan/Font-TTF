@@ -107,7 +107,8 @@ use Symbol();
 
 require 5.004;
 
-$VERSION = 0.20;    # MJPH      13-JAN-2001     Add XML output and some of XML input, AAT & OT tables
+$VERSION = 0.21;    # MJPH      23-MAR-2001     Improve Opentype support
+# $VERSION = 0.20;    # MJPH      13-JAN-2001     Add XML output and some of XML input, AAT & OT tables
 # $VERSION = 0.19;    # MJPH      29-SEP-2000     Add cmap::is_unicode, debug makefile.pl
 # $VERSION = 0.18;    # MJPH      21-JUL-2000     Debug Utils::TTF_bininfo
 # $VERSION = 0.17;    # MJPH      16-JUN-2000     Add utf8 support to names

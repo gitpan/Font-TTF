@@ -5,4 +5,6 @@ blib/
 CVS/
 \.tar
 misc/
+Build/
+\.cvsignore
 

@@ -64,9 +64,9 @@ sub out
     {
         next unless defined $loca->[$i];
         $loca->[$i]->update;
-        $loca->[$i]{'OUTLOC'} = $offset;
+        $loca->[$i]{' OUTLOC'} = $offset;
         $loca->[$i]->out($fh);
-        $offset += $loca->[$i]{'OUTLEN'};
+        $offset += $loca->[$i]{' OUTLEN'};
     }
     $self;
 }

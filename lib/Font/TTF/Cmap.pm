@@ -140,7 +140,6 @@ sub read
                 $delta = unpack("n", substr($dat, ($j << 1) + ($num << 2) + 2, 2));
                 $delta -= 65536 if $delta > 32767;
                 $range = unpack("n", substr($dat, ($j << 1) + $num * 6 + 2, 2));
-                $s->{'Start'} = $start unless $j;
                 for ($k = $start; $k <= $end; $k++)
                 {
                     if ($range == 0)
@@ -152,8 +151,7 @@ sub read
                     $s->{'val'}{$k} = $id if ($id);
                 }
             }
-            $s->{'Num'} = 0x10000;               # always ends here
-        } elsif ($form == 8 || $form == 10)
+        } elsif ($form == 8 || $form == 12)
         {
             if ($form == 8)
             {
@@ -171,7 +169,7 @@ sub read
                 for ($k = $start; $k <= $end; $k++)
                 { $s->{'val'}{$k} = $s++; }
             }
-        } elsif ($form == 12)
+        } elsif ($form == 10)
         {
             $fh->read($dat, 8);
             ($start, $num) = unpack("N2", $dat);
@@ -246,13 +244,17 @@ sub out
 
     for ($i = 0; $i < $self->{'Num'}; $i++)
     { $fh->print(pack("nnN", $self->{'Tables'}[$i]{'Platform'}, $self->{'Tables'}[$i]{'Encoding'}, 0)); }
-    
+
     for ($i = 0; $i < $self->{'Num'}; $i++)
     {
         $s = $self->{'Tables'}[$i];
         @keys = sort {$a <=> $b} keys %{$s->{'val'}};
         $s->{' outloc'} = $fh->tell();
-        $fh->print(pack("n3", $s->{'Format'}, 0, $s->{'Ver'}));       # come back for length
+        if ($s->{'Format'} < 8)
+        { $fh->print(pack("n3", $s->{'Format'}, 0, $s->{'Ver'})); }       # come back for length
+        else
+        { $fh->print(pack("n2N2", $s->{'Format'}, 0, 0, $s->{'Ver'})); }
+            
         if ($s->{'Format'} == 0)
         {
             $fh->print(pack("C256", @{$s->{'val'}}{0 .. 255}));
@@ -269,7 +271,7 @@ sub out
 
             push(@keys, 0xFFFF) unless ($keys[-1] == 0xFFFF);
             $newseg = 1; $num = 0;
-            for ($j = 0; $j <= $#keys; $j++)
+            for ($j = 0; $j <= $#keys && $keys[$j] <= 0xFFFF; $j++)
             {
                 $v = $s->{'val'}{$keys[$j]};
                 if ($newseg)
@@ -319,11 +321,45 @@ sub out
                 next if ($range[$j] == 0);
                 $fh->print(pack("n*", @{$s->{'val'}}{$starts[$j] .. $ends[$j]}));
             }
+        } elsif ($s->{'Format'} == 8 || $s->{'Format'} == 12)
+        {
+            my (@jobs, $start, $current, $curr_glyf, $map);
+            
+            $map = "\000" x 8192;
+            foreach $j (@keys)
+            {
+                if ($j > 0xFFFF)
+                {
+                    if (defined $s->{'val'}{$j >> 16})
+                    { $s->{'Format'} = 12; }
+                    vec($map, $j >> 16, 1) = 1;
+                }
+                if ($j != $current + 1 || $s->{'val'}{$j} != $curr_glyf + 1)
+                {
+                    push (@jobs, [$start, $current, $curr_glyf]) if (defined $start);
+                    $start = $j; $current = $j; $curr_glyf = $s->{'val'}{$j};
+                }
+            }
+            $fh->print($map) if ($s->{'Format'} == 8);
+            $fh->print(pack('N', $#jobs + 1));
+            foreach $j (@jobs)
+            { $fh->print(pack('N3', @{$j})); }
+        } elsif ($s->{'Format'} == 10)
+        {
+            $fh->print(pack('N2', $keys[0], $keys[-1] - $keys[0] + 1));
+            $fh->print(pack('n*', $s->{'val'}{$keys[0] .. $keys[-1]}));
         }
 
         $loc = $fh->tell();
-        $fh->seek($s->{' outloc'} + 2, 0);
-        $fh->print(pack("n", $loc - $s->{' outloc'}));
+        if ($s->{'Format'} < 8)
+        {
+            $fh->seek($s->{' outloc'} + 2, 0);
+            $fh->print(pack("n", $loc - $s->{' outloc'}));
+        } else
+        {
+            $fh->seek($s->{' outloc'} + 4, 0);
+            $fh->print(pack("N", $loc - $s->{' outloc'}));
+        }
         $fh->seek($base_loc + 8 + ($i << 3), 0);
         $fh->print(pack("N", $s->{' outloc'} - $base_loc));
         $fh->seek($loc, 0);
@@ -397,8 +433,6 @@ sub is_unicode
 =item *
 
 No support for format 2 tables (MBCS)
-
-Read only support for formats 8, 10 & 12. No ability to write these formats
 
 =back
 

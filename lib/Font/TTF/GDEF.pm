@@ -96,7 +96,7 @@ use strict;
 use Font::TTF::Table;
 use Font::TTF::Utils;
 use Font::TTF::Ttopen;
-use vars qw(@ISA);
+use vars qw(@ISA $new_gdef);
 
 @ISA = qw(Font::TTF::Table);
 
@@ -118,8 +118,11 @@ sub read
     $bloc = $fh->tell();
     $fh->read($dat, 10);
     ($self->{'Version'}, $goff, $aoff, $loff) = TTF_Unpack('fS3', $dat);
-#    $fh->read($dat, 12);
-#    ($self->{'Version'}, $goff, $aoff, $loff, $moff) = TTF_Unpack('fS4', $dat);
+    if ($new_gdef)
+    {
+        $fh->read($dat, 12);
+        ($self->{'Version'}, $goff, $aoff, $loff, $moff) = TTF_Unpack('fS4', $dat);
+    }
 
     if ($goff > 0)
     {
@@ -127,11 +130,11 @@ sub read
         $self->{'GLYPH'} = Font::TTF::Coverage->new(0)->read($fh);
     }
 
-#    if ($moff > 0)
-#    {
-#        $fh->seek($moff + $boff, 0);
-#        $self->{'MARKS'} = Font::TTF::Coverage->new(0)->read($fh);
-#    }
+    if ($new_gdef && $moff > 0)
+    {
+        $fh->seek($moff + $boff, 0);
+        $self->{'MARKS'} = Font::TTF::Coverage->new(0)->read($fh);
+    }
 
     if ($aoff > 0)
     {
@@ -223,8 +226,10 @@ sub out
     return $self->SUPER::out($fh) unless $self->{' read'};
 
     $loc = $fh->tell();
-#    $fh->print(TTF_Pack('fSSSS', $self->{'Version'}, 0, 0, 0, 0));
-    $fh->print(TTF_Pack('fSSS', $self->{'Version'}, 0, 0, 0));
+    if ($new_gdef)
+    { $fh->print(TTF_Pack('fSSSS', $self->{'Version'}, 0, 0, 0, 0)); }
+    else
+    { $fh->print(TTF_Pack('fSSS', $self->{'Version'}, 0, 0, 0)); }
 
     if (defined $self->{'GLYPH'})
     {
@@ -285,7 +290,7 @@ sub out
         Font::TTF::Ttopen::out_final($fh, $out, \@reftables);
     }
 
-    if (0 && defined $self->{'MARKS'})
+    if ($new_gdef && defined $self->{'MARKS'})
     {
         $moff = $fh->tell() - $loc;
         $self->{'MARKS'}->out($fh);
@@ -293,8 +298,10 @@ sub out
 
     $loc1 = $fh->tell();
     $fh->seek($loc + 4, 0);
-#    $fh->print(TTF_Pack('S4', $goff, $aoff, $loff, $moff));
-    $fh->print(TTF_Pack('S3', $goff, $aoff, $loff));
+    if ($new_gdef)
+    { $fh->print(TTF_Pack('S4', $goff, $aoff, $loff, $moff)); }
+    else
+    { $fh->print(TTF_Pack('S3', $goff, $aoff, $loff)); }
     $fh->seek($loc1, 0);
     $self;
 }

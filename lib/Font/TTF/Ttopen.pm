@@ -478,9 +478,9 @@ sub out
     	foreach $lTag (@{$tag->{'LANG_TAGS'}}, 'DEFAULT')
     	{
     	    $l = $tag->{$lTag};
-    	    next if ($l->{' REFTAG'} ne '');
+    	    next if (!defined $l || $l->{' REFTAG'} ne '');
     	    $l->{' OFFSET'} = tell($fh) - $base - $oScript - $tag->{' OFFSET'};
-    	    $fh->print(pack("n*", $l->{'RE_ORDER'}, $l->{'DEFAULT'},
+    	    $fh->print(pack("n*", $l->{'RE_ORDER'}, defined $l->{'DEFAULT'} ? $l->{'DEFAULT'} : -1,
     	            $#{$l->{'FEATURES'}} + 1,
     	            map {$self->{'FEATURES'}{$_}{'INDEX'}} @{$l->{'FEATURES'}}));
     	}
@@ -964,7 +964,7 @@ sub out_context
         $out .= pack('n3', $fmt, $#{$lookup->{'RULES'}[0][0]{'MATCH'}} + 1,
                                 $#{$lookup->{'RULES'}[0][0]{'ACTION'}} + 1);
         foreach $t (@{$lookup->{'RULES'}[0][0]{'MATCH'}})
-        { $out .= Font::TTF::Ttopen::ref_cache($t, $ctables, length($out)); }
+        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
         foreach $t (@{$lookup->{'RULES'}[0][0]{'ACTION'}})
         { $out .= pack('n2', @$t); }
     } elsif ($type == 6 && $fmt == 3)

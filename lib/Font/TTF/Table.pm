@@ -84,7 +84,7 @@ This method marks the table as read and then just sets the input file pointer
 but does not read any data. If the table has already been read, then returns
 C<undef> else returns C<$self>
 
-=cut.
+=cut
 
 sub read
 {

@@ -234,12 +234,12 @@ sub TTF_Pack
             }
             elsif ($type =~ m/^[l]/oi)
             {
-                $res += 1 << 32 if $res < 0;
+                $res += 1 << 32 if ($type eq 'L' && $res < 0);
                 $dat .= pack("N", $res);
             }
             elsif ($type =~ m/^[s]/oi)
             {
-                $res += 1 << 16 if $res < 0;
+                $res += 1 << 16 if ($type eq 'S' && $res < 0);
                 $dat .= pack("n", $res);
             }
             elsif ($type eq "c")

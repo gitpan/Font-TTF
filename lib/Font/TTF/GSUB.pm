@@ -214,7 +214,7 @@ sub out_sub
         $offc = length($out);
         for ($i = 0; $i < $num; $i++)
         {
-            $out .= pack("n*", scalar $lookup->{'RULES'}[$i][0]{'ACTION'},
+            $out .= pack("n*", $#{$lookup->{'RULES'}[$i][0]{'ACTION'}} + 1,
                                     @{$lookup->{'RULES'}[$i][0]{'ACTION'}});
             substr($out, ($i << 1) + 6, 2) = pack('n', $offc);
             $offc = length($out);

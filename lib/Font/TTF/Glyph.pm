@@ -483,14 +483,14 @@ sub update
 
     return $self unless (defined $self->{' read'} && $self->{' read'} > 1);
     $self->update_bbox;
-    $self->{'DAT'} = TTF_Out_Fields($self, \%fields, 10);
+    $self->{' DAT'} = TTF_Out_Fields($self, \%fields, 10);
     $num = $self->{'numberOfContours'};
     if ($num > 0)
     {
         $self->{' DAT'} .= pack("n*", @{$self->{'endPoints'}});
         $len = $self->{'instLen'};
         $self->{' DAT'} .= pack("n", $len);
-        $self->{' DAT'} .= pack("a" . $len, substr($self->{'hints'}, 0, $len));
+        $self->{' DAT'} .= pack("a" . $len, substr($self->{'hints'}, 0, $len)) if ($len > 0);
         for ($i = 0; $i < $self->{'numPoints'}; $i++)
         {
             $flag = $self->{'flags'}[$i] & 1;
@@ -593,6 +593,7 @@ sub update
     }
     $self->{' DAT'} .= "\000" if (length($self->{' DAT'}) & 1);
     $self->{' OUTLEN'} = length($self->{' DAT'});
+    $self->{' read'} = 1;
 # we leave numPoints and instLen since maxp stats use this
     $self;
 }
@@ -610,7 +611,7 @@ sub update_bbox
     my ($num, $maxx, $minx, $maxy, $miny, $i, $comp, $x, $y, $compg);
 
     return $self unless $self->{' read'} > 1;       # only if read_dat done
-    $miny = $minx = 65537; $maxx = $maxy = 0;
+    $miny = $minx = 65537; $maxx = $maxy = -65537;
     $num = $self->{'numberOfContours'};
     if ($num > 0)
     {
@@ -678,8 +679,8 @@ sub maxInfo
     $res[4] = length($self->{'hints'}) if defined $self->{'hints'};
     if ($self->{'numberOfContours'} > 0)
     {
-        $res[0] = $self->{'numPoints'};
-        $res[1] = $self->{'numberOfContours'};
+        $res[2] = $res[0] = $self->{'numPoints'};
+        $res[3] = $res[1] = $self->{'numberOfContours'};
         $res[6] = 1;
     } elsif ($self->{'numberOfContours'} < 0)
     {

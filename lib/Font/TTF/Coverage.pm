@@ -123,7 +123,10 @@ sub out
         else
         { $grp++; }
     }
-    $fmt = 2 if ($fmt == 1 && $eff / $grp > 4);
+    if ($self->{'cover'})
+    { $fmt = 2 if ($eff / $grp > 4); }
+    else
+    { $fmt = 2 if ($grp > 1); }
     
     if ($fmt == 1 && $self->{'cover'})
     {

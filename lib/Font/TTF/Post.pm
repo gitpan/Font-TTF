@@ -265,6 +265,15 @@ sub XML_element
     $self;
 }
 
+=head2 $t->update
+
+Updates the table by reading it and thus forcing a rewrite of strings for each glyph
+rather than just the data block
+
+=cut
+
+sub update
+{ $_[0]->read if ($_[0]->{' dirty'}); }
 
 1;
 
