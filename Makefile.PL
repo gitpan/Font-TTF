@@ -1,6 +1,5 @@
 use ExtUtils::MakeMaker;
 
-@scripts = grep {-f } glob("scripts/*.*");
 @theselibs = grep {-f } glob("lib/Font/TTF/*");
 
 # incantation to enable MY::pm_to_blib later on
@@ -9,7 +8,6 @@ push(@ExtUtils::MakeMaker::Overridable, qw(pm_to_blib)) if ($^O eq 'MSWin32');
 WriteMakefile (
         NAME => "Font::TTF",
         VERSION_FROM => "lib/Font/TTF/Font.pm",
-        EXE_FILES => \@scripts,
 #        HTMLLIBPODS => {map {my $t = $_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @theselibs},
 #        HTMLSCRIPTPODS => {map {my $t=$_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @scripts},
         AUTHOR => "martin_hosken\@sil.org",

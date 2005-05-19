@@ -549,39 +549,49 @@ sub out
     undef $big;
     $fh->seek($end, 0);
     $oLook = $end - $base;
+    
+    # Start Lookup List Table
     $nTags = $#{$self->{'LOOKUP'}} + 1;
     $fh->print(pack("n", $nTags));
     $fh->print(pack("n", 0) x $nTags);
-    $end = $fh->tell();
+    $end = $fh->tell();		# end of LookupListTable = start of Lookups
     foreach $tag (@{$self->{'LOOKUP'}})
     { $nSubs += $self->num_sub($tag); }
     for ($i = 0; $i < $nTags; $i++)
     {
         $fh->seek($end, 0);
         $tag = $self->{'LOOKUP'}[$i];
-        $tag->{' OFFSET'} = $end - $base - $oLook;
-        if (!defined $big && $tag->{' OFFSET'} + ($nTags - $i) * 6 + $nSubs * 10 > 65535)
+        $off = $end - $base - $oLook;	# BH 2004-03-04
+        # Is there room, from the start of this i'th lookup, for this and the remaining
+        # lookups to be wrapped in extension lookups?
+        if (!defined $big && $off + ($nTags - $i) * 6 + $nSubs * 10 > 65535) # BH 2004-03-04
         {
+			# Not enough room -- need to start an extension!            
             my ($k, $ext);
             $ext = $self->extension();
+            # Must turn previous lookup into the first extension
             $i--;
             $tag = $self->{'LOOKUP'}[$i];
             $end = $tag->{' OFFSET'} + $base + $oLook;
             $fh->seek($end, 0);
             $big = $i;
+            # For this and the remaining lookups, build extensions lookups
             for ($j = $i; $j < $nTags; $j++)
             {
                 $tag = $self->{'LOOKUP'}[$j];
                 $nSub = $self->num_sub($tag);
                 $fh->print(pack("nnn", $ext, $tag->{'FLAG'}, $nSub));
-                $fh->print(pack("n*", map {$_ * 8 + 6 + $nSub * 2} (1 .. $nSub)));
-                $tag->{' EXT_OFFSET'} = $fh->tell();
-                $tag->{' OFFSET'} = $tag->{' EXT_OFFSET'} - $nSub * 2 - 6 - $base - $oLook;
+                $fh->print(pack("n*", map {$_ * 8 + 6 + $nSub * 2} (0 .. $nSub-1)));	# BH 2004-03-04
+                $tag->{' EXT_OFFSET'} = $fh->tell();	# = first extension lookup subtable
+                $tag->{' OFFSET'} = $tag->{' EXT_OFFSET'} - $nSub * 2 - 6 - $base - $oLook; # offset to this extension lookup
                 for ($k = 0; $k < $nSub; $k++)
                 { $fh->print(pack('nnN', 1, $tag->{'TYPE'}, 0)); }
             }
+            
             $tag = $self->{'LOOKUP'}[$i];
+            # Leave file positioned after all the extension lookups -- where the referenced lookups will start.
         }
+        $tag->{' OFFSET'} = $off unless defined $big;	# BH 2004-03-04
         $nSub = $self->num_sub($tag);
         if (!defined $big)
         {

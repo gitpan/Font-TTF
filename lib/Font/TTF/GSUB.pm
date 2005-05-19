@@ -220,7 +220,7 @@ sub out_sub
     {
         $out = pack("nnn", $fmt, Font::TTF::Ttopen::ref_cache($lookup->{'COVERAGE'}, $ctables, 2),
                             $num);
-        $out .= pack('n*', 0 x $num);
+        $out .= pack('n*', (0) x $num);
         $offc = length($out);
         for ($i = 0; $i < $num; $i++)
         {

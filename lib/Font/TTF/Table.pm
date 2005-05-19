@@ -90,7 +90,7 @@ sub read
 {
     my ($self) = @_;
 
-    return $self->read_dat if (ref($self) eq qq/__PACKAGE__/);
+    return $self->read_dat if (ref($self) eq "Font::TTF::Table");
     return undef if $self->{' read'};
     $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
     $self->{' read'} = 1;

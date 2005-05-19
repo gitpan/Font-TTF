@@ -111,18 +111,18 @@ sub update
     my ($self) = @_;
     my ($hmtx) = $self->{' PARENT'}{'hmtx'};
     my ($glyphs);
-    my ($num);
+    my ($num, $res);
     my ($i, $maw, $mlsb, $mrsb, $mext, $aw, $lsb, $ext);
 
     return undef unless ($self->SUPER::update);
     return undef unless (defined $hmtx && defined $self->{' PARENT'}{'loca'});
     
-    $hmtx->read->update;
-    $self->{' PARENT'}{'loca'}->read->update;
+    $res = $hmtx->read->update;
+    $res |= $self->{' PARENT'}{'loca'}->read->update;
     $glyphs = $self->{' PARENT'}{'loca'}{'glyphs'};
     $num = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
 
-    return undef unless ($hmtx->{' isDirty'} || $self->{' PARENT'}{'loca'}{' isDirty'});
+    return undef unless ($res);
     
     for ($i = 0; $i < $num; $i++)
     {
