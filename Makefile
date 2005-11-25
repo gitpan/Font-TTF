@@ -21,13 +21,13 @@
 
 # --- MakeMaker const_config section:
 
-# These definitions are from config.sh (via /usr/lib/perl5/5.8.5/i586-linux-thread-multi/Config.pm)
+# These definitions are from config.sh (via /usr/lib/perl5/5.8.6/i586-linux-thread-multi/Config.pm)
 
 # They may have been overridden via Makefile.PL or on the command line
 AR = ar
 CC = cc
 CCCDLFLAGS = -fPIC
-CCDLFLAGS = -Wl,-E -Wl,-rpath,/usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE
+CCDLFLAGS = -Wl,-E -Wl,-rpath,/usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE
 DLEXT = so
 DLSRC = dl_dlopen.xs
 LD = cc
@@ -37,15 +37,15 @@ LIBC =
 LIB_EXT = .a
 OBJ_EXT = .o
 OSNAME = linux
-OSVERS = 2.6.8.1
+OSVERS = 2.6.9
 RANLIB = :
-SITELIBEXP = /usr/lib/perl5/site_perl/5.8.5
-SITEARCHEXP = /usr/lib/perl5/site_perl/5.8.5/i586-linux-thread-multi
+SITELIBEXP = /usr/lib/perl5/site_perl/5.8.6
+SITEARCHEXP = /usr/lib/perl5/site_perl/5.8.6/i586-linux-thread-multi
 SO = so
 EXE_EXT = 
 FULL_AR = /usr/bin/ar
-VENDORARCHEXP = /usr/lib/perl5/vendor_perl/5.8.5/i586-linux-thread-multi
-VENDORLIBEXP = /usr/lib/perl5/vendor_perl/5.8.5
+VENDORARCHEXP = /usr/lib/perl5/vendor_perl/5.8.6/i586-linux-thread-multi
+VENDORLIBEXP = /usr/lib/perl5/vendor_perl/5.8.6
 
 
 # --- MakeMaker constants section:
@@ -53,11 +53,11 @@ AR_STATIC_ARGS = cr
 DIRFILESEP = /
 NAME = Font::TTF
 NAME_SYM = Font_TTF
-VERSION = 0.35
+VERSION = 0.37
 VERSION_MACRO = VERSION
-VERSION_SYM = 0_35
+VERSION_SYM = 0_37
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 0.35
+XS_VERSION = 0.37
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -74,17 +74,17 @@ PREFIX =
 PERLPREFIX = /usr
 SITEPREFIX = /usr
 VENDORPREFIX = /usr
-INSTALLPRIVLIB = $(PERLPREFIX)/lib/perl5/5.8.5
+INSTALLPRIVLIB = $(PERLPREFIX)/lib/perl5/5.8.6
 DESTINSTALLPRIVLIB = $(DESTDIR)$(INSTALLPRIVLIB)
-INSTALLSITELIB = $(SITEPREFIX)/lib/perl5/site_perl/5.8.5
+INSTALLSITELIB = $(SITEPREFIX)/lib/perl5/site_perl/5.8.6
 DESTINSTALLSITELIB = $(DESTDIR)$(INSTALLSITELIB)
-INSTALLVENDORLIB = $(VENDORPREFIX)/lib/perl5/vendor_perl/5.8.5
+INSTALLVENDORLIB = $(VENDORPREFIX)/lib/perl5/vendor_perl/5.8.6
 DESTINSTALLVENDORLIB = $(DESTDIR)$(INSTALLVENDORLIB)
-INSTALLARCHLIB = $(PERLPREFIX)/lib/perl5/5.8.5/i586-linux-thread-multi
+INSTALLARCHLIB = $(PERLPREFIX)/lib/perl5/5.8.6/i586-linux-thread-multi
 DESTINSTALLARCHLIB = $(DESTDIR)$(INSTALLARCHLIB)
-INSTALLSITEARCH = $(SITEPREFIX)/lib/perl5/site_perl/5.8.5/i586-linux-thread-multi
+INSTALLSITEARCH = $(SITEPREFIX)/lib/perl5/site_perl/5.8.6/i586-linux-thread-multi
 DESTINSTALLSITEARCH = $(DESTDIR)$(INSTALLSITEARCH)
-INSTALLVENDORARCH = $(VENDORPREFIX)/lib/perl5/vendor_perl/5.8.5/i586-linux-thread-multi
+INSTALLVENDORARCH = $(VENDORPREFIX)/lib/perl5/vendor_perl/5.8.6/i586-linux-thread-multi
 DESTINSTALLVENDORARCH = $(DESTDIR)$(INSTALLVENDORARCH)
 INSTALLBIN = $(PERLPREFIX)/bin
 DESTINSTALLBIN = $(DESTDIR)$(INSTALLBIN)
@@ -106,14 +106,14 @@ INSTALLSITEMAN3DIR = $(SITEPREFIX)/share/man/man3
 DESTINSTALLSITEMAN3DIR = $(DESTDIR)$(INSTALLSITEMAN3DIR)
 INSTALLVENDORMAN3DIR = $(VENDORPREFIX)/share/man/man3
 DESTINSTALLVENDORMAN3DIR = $(DESTDIR)$(INSTALLVENDORMAN3DIR)
-PERL_LIB = /usr/lib/perl5/5.8.5
-PERL_ARCHLIB = /usr/lib/perl5/5.8.5/i586-linux-thread-multi
+PERL_LIB = /usr/lib/perl5/5.8.6
+PERL_ARCHLIB = /usr/lib/perl5/5.8.6/i586-linux-thread-multi
 LIBPERL_A = libperl.a
 FIRST_MAKEFILE = Makefile
 MAKEFILE_OLD = $(FIRST_MAKEFILE).old
 MAKE_APERL_FILE = $(FIRST_MAKEFILE).aperl
 PERLMAINCC = $(CC)
-PERL_INC = /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE
+PERL_INC = /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE
 PERL = /usr/bin/perl
 FULLPERL = /usr/bin/perl
 ABSPERL = $(PERL)
@@ -127,7 +127,7 @@ PERL_CORE = 0
 PERM_RW = 644
 PERM_RWX = 755
 
-MAKEMAKER   = /usr/lib/perl5/5.8.5/ExtUtils/MakeMaker.pm
+MAKEMAKER   = /usr/lib/perl5/5.8.6/ExtUtils/MakeMaker.pm
 MM_VERSION  = 6.17
 MM_REVISION = 1.133
 
@@ -473,7 +473,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = Font-TTF
-DISTVNAME = Font-TTF-0.35
+DISTVNAME = Font-TTF-0.37
 
 
 # --- MakeMaker macro section:
@@ -541,21 +541,21 @@ config :: $(INST_ARCHAUTODIR)$(DIRFILESEP).exists
 config :: $(INST_AUTODIR)$(DIRFILESEP).exists
 	$(NOECHO) $(NOOP)
 
-$(INST_AUTODIR)/.exists :: /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h
+$(INST_AUTODIR)/.exists :: /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h
 	$(NOECHO) $(MKPATH) $(INST_AUTODIR)
-	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h $(INST_AUTODIR)/.exists
+	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h $(INST_AUTODIR)/.exists
 
 	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_AUTODIR)
 
-$(INST_LIBDIR)/.exists :: /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h
+$(INST_LIBDIR)/.exists :: /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h
 	$(NOECHO) $(MKPATH) $(INST_LIBDIR)
-	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h $(INST_LIBDIR)/.exists
+	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h $(INST_LIBDIR)/.exists
 
 	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_LIBDIR)
 
-$(INST_ARCHAUTODIR)/.exists :: /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h
+$(INST_ARCHAUTODIR)/.exists :: /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h
 	$(NOECHO) $(MKPATH) $(INST_ARCHAUTODIR)
-	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h $(INST_ARCHAUTODIR)/.exists
+	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h $(INST_ARCHAUTODIR)/.exists
 
 	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_ARCHAUTODIR)
 
@@ -563,9 +563,9 @@ config :: $(INST_MAN3DIR)$(DIRFILESEP).exists
 	$(NOECHO) $(NOOP)
 
 
-$(INST_MAN3DIR)/.exists :: /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h
+$(INST_MAN3DIR)/.exists :: /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h
 	$(NOECHO) $(MKPATH) $(INST_MAN3DIR)
-	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.5/i586-linux-thread-multi/CORE/perl.h $(INST_MAN3DIR)/.exists
+	$(NOECHO) $(EQUALIZE_TIMESTAMP) /usr/lib/perl5/5.8.6/i586-linux-thread-multi/CORE/perl.h $(INST_MAN3DIR)/.exists
 
 	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_MAN3DIR)
 
@@ -840,7 +840,7 @@ metafile :
 	$(NOECHO) $(ECHO) '# http://module-build.sourceforge.net/META-spec.html' > META.yml
 	$(NOECHO) $(ECHO) '#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#' >> META.yml
 	$(NOECHO) $(ECHO) 'name:         Font-TTF' >> META.yml
-	$(NOECHO) $(ECHO) 'version:      0.35' >> META.yml
+	$(NOECHO) $(ECHO) 'version:      0.37' >> META.yml
 	$(NOECHO) $(ECHO) 'version_from: lib/Font/TTF/Font.pm' >> META.yml
 	$(NOECHO) $(ECHO) 'installdirs:  site' >> META.yml
 	$(NOECHO) $(ECHO) 'requires:' >> META.yml
@@ -1108,7 +1108,7 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd:
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="0,35,0,0">' > $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="0,37,0,0">' > $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <TITLE>$(DISTNAME)</TITLE>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <ABSTRACT>TTF font support for Perl</ABSTRACT>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <AUTHOR>martin_hosken@sil.org</AUTHOR>' >> $(DISTNAME).ppd
