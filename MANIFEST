@@ -60,6 +60,7 @@ lib/Font/TTF/Vmtx.pm
 lib/Font/TTF/Win32.pm
 lib/Font/TTF/XMLparse.pm
 lib/ttfmod.pl
+Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
 META.yml
