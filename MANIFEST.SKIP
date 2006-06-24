@@ -10,5 +10,8 @@ exes/
 \.cvsignore
 ^#
 \.svn/
-^Makefile$
-~$
+Makefile
+\.par$
+-stamp$
+debian/
+pm_to_blib
