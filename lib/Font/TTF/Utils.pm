@@ -213,6 +213,7 @@ sub TTF_Pack
     my ($fmt, @obj) = @_;
     my ($type, $i, $arrlen, $dat, $res, $frac);
 
+    $dat = '';
     while ($fmt =~ s/^([flsc])(\d+|\*)?//oi)
     {
         $type = $1;
@@ -222,7 +223,7 @@ sub TTF_Pack
     
         for ($i = 0; $i < $arrlen; $i++)
         {
-            $res = shift(@obj);
+            $res = shift(@obj) || 0;
             if ($type eq "f")
             {
                 $frac = int(($res - int($res)) * 65536);
@@ -435,12 +436,12 @@ Converts a binary string of hinting code into a textual representation
     {
         my ($dat) = @_;
         my ($len) = length($dat);
-        my ($res, $i);
-        my ($text, $num, $size);
+        my ($res, $i, $text, $size, $num);
 
         for ($i = 0; $i < $len; $i++)
         {
             ($text, $num, $size) = @{$hints[ord(substr($dat, $i, 1))]};
+            $num = 0 unless (defined $num);
             $text = sprintf("UNK[%02X]", ord(substr($dat, $i, 1))) unless defined $text;
             $res .= $text;
             if ($num != 0)
@@ -578,7 +579,7 @@ sub make_circle
     $glyph->{'numPoints'} = $#{$glyph->{'x'}} + 1;
     $glyph->update;
     $numg = $font->{'maxp'}{'numGlyphs'};
-    $font->{'maxp'}->read->{'numGlyphs'}++;
+    $font->{'maxp'}{'numGlyphs'}++;
 
     $font->{'hmtx'}{'advance'}[$numg] = int($xorg + $R + $r + $sb + .5);
     $font->{'hmtx'}{'lsb'}[$numg] = int($xorg - $R - $r + .5);

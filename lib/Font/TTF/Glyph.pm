@@ -98,6 +98,11 @@ elements:
 =item glyph
 
 The glyph number of the glyph which comprises this component of the composite.
+NOTE: In some badly generated fonts, C<glyph> may contain a numerical value
+but that glyph might not actually exist in the font file.  This could
+occur in any glyph, but is particularly likely for glyphs that have
+no strokes, such as SPACE, U+00A0 NO-BREAK SPACE, or 
+U+200B ZERO WIDTH SPACE.
 
 =item args
 
@@ -269,7 +274,7 @@ sub read_dat
     my ($self) = @_;
     my ($dat, $num, $max, $i, $flag, $len, $val, $val1, $fp);
 
-    return $self if $self->{' read'} > 1;
+    return $self if (defined $self->{' read'} && $self->{' read'} > 1);
     $self->read unless $self->{' read'};
     $dat = $self->{' DAT'};
     $fp = 10;
@@ -462,7 +467,7 @@ sub XML_element
         my ($dat);
         $fh->print("$depth<hints>\n");
 #        Font::TTF::Utils::XML_hexdump($context, $depth . $context->{'indent'}, $self->{'hints'});
-        $dat = Font::TTF::Utils::XML_binhint($self->{'hints'});
+        $dat = Font::TTF::Utils::XML_binhint($self->{'hints'}) || "";
         $dat =~ s/\n(?!$)/\n$depth$context->{'indent'}/mg;
         $fh->print("$depth$context->{'indent'}$dat");
         $fh->print("$depth</hints>\n");
@@ -641,7 +646,10 @@ sub update_bbox
             my ($gnx, $gny, $gxx, $gxy);
             my ($sxx, $sxy, $syx, $syy);
             
-            $compg = $self->{' PARENT'}{'loca'}{'glyphs'}[$comp->{'glyph'}]->read->update_bbox;
+            my $otherg = $self->{' PARENT'}{'loca'}{'glyphs'}[$comp->{'glyph'}];
+            # work around bad fonts: see documentation for 'comps' above
+            next unless (defined $otherg);
+            $compg = $otherg->read->update_bbox;
             ($gnx, $gny, $gxx, $gxy) = @{$compg}{'xMin', 'yMin', 'xMax', 'yMax'};
             if (defined $comp->{'scale'})
             {
@@ -674,7 +682,9 @@ sub update_bbox
 =head2 $g->maxInfo
 
 Returns lots of information about a glyph so that the C<maxp> table can update
-itself.
+itself. Returns array containing contributions of this glyph to maxPoints, maxContours, 
+maxCompositePoints, maxCompositeContours, maxSizeOfInstructions, maxComponentElements, 
+and maxComponentDepth.
 
 =cut
 
@@ -685,17 +695,24 @@ sub maxInfo
 
     $self->read_dat;            # make sure we've read some data
     $res[4] = length($self->{'hints'}) if defined $self->{'hints'};
+    $res[6] = 1;
     if ($self->{'numberOfContours'} > 0)
     {
-        $res[2] = $res[0] = $self->{'numPoints'};
-        $res[3] = $res[1] = $self->{'numberOfContours'};
-        $res[6] = 1;
+        $res[0] = $self->{'numPoints'};
+        $res[1] = $self->{'numberOfContours'};
     } elsif ($self->{'numberOfContours'} < 0)
     {
-        $res[6] = 1;
         for ($i = 0; $i <= $#{$self->{'comps'}}; $i++)
         {
-            @n = $self->{' PARENT'}{'loca'}{'glyphs'}[$self->{'comps'}[$i]{'glyph'}]->maxInfo;
+            my $otherg = 
+                $self->{' PARENT'}{'loca'}{'glyphs'}
+                    [$self->{'comps'}[$i]{'glyph'}];
+            
+            # work around bad fonts: see documentation for 'comps' above
+            next unless (defined $otherg );
+            
+            @n = $otherg->maxInfo;
+
             $res[2] += $n[2] == 0 ? $n[0] : $n[2];
             $res[3] += $n[3] == 0 ? $n[1] : $n[3];
             $res[5]++;
@@ -741,7 +758,9 @@ sub get_points
 
     foreach $comp (@{$self->{'comps'}})
     {
-        $compg = $self->{' PARENT'}{'loca'}{'glyphs'}[$comp->{'glyph'}]->read;
+        $compg = $self->{' PARENT'}{'loca'}{'glyphs'}[$comp->{'glyph'}];
+        # work around bad fonts: see documentation for 'comps' above
+        next unless (defined $compg );
         $compg->get_points;
 
         for ($i = 0; $i < $compg->{'numPoints'}; $i++)
@@ -770,7 +789,11 @@ sub get_points
 
 Returns an array of all the glyph ids that are used to make up this glyph. That
 is all the compounds and their references and so on. If this glyph is not a
-compound, then returns an empty array
+compound, then returns an empty array.
+
+Please note the warning about bad fonts that reference nonexistant glyphs
+under INSTANCE VARIABLES above.  This function will not attempt to 
+filter out nonexistant glyph numbers.
 
 =cut
 
@@ -783,9 +806,12 @@ sub get_refs
     return unless ($self->{'numberOfContours'} < 0);
     foreach $g (@{$self->{'comps'}})
     {
-        my (@list) = $self->{' PARENT'}{'loca'}{'glyphs'}[$g->{'glyph'}]->get_points;
         push (@res, $g->{'glyph'});
-        push (@res, @list) if ($list[0]);
+        my $otherg = $self->{' PARENT'}{'loca'}{'glyphs'}[$g->{'glyph'}];
+        # work around bad fonts: see documentation for 'comps' above
+        next unless (defined $otherg);
+        my @list = $otherg->get_refs;
+        push(@res, @list);
     }
     return @res;
 }

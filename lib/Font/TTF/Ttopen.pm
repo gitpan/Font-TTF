@@ -78,8 +78,7 @@ This holds the index of the default feature, if there is one, or -1 otherwise.
 
 =item FEATURES
 
-This is an array of feature indices which index into the FEATURES instance
-variable of the table
+This is an array of feature tags for all the features enabled for this language
 
 =back
 
@@ -323,7 +322,7 @@ sub read
 	    push (@{$l->{'FEAT_TAGS'}}, $tag);
     }
 
-    foreach $tag (grep {length($_) == 4} keys %$l)
+    foreach $tag (grep {m/^.{4}(?:\s_\d+)?$/o} keys %$l)
     {
 	    $fh->seek($moff + $l->{$tag}{' OFFSET'}, 0);
     	$fh->read($dat, 4);
@@ -364,7 +363,7 @@ sub read
     	    ($lTag, $off) = unpack("a4n", substr($dat, $i * 6, 6));
     	    $off += $l->{$tag}{' OFFSET'};
     	    $l->{$tag}{$lTag}{' OFFSET'} = $off;
-            foreach (@{$l->{$tag}{'LANG_TAGS'}})
+            foreach (@{$l->{$tag}{'LANG_TAGS'}}, 'DEFAULT')
             { $l->{$tag}{$lTag}{' REFTAG'} = $_ if ($l->{$tag}{$_}{' OFFSET'} == $off
                                                    && !$l->{$tag}{$_}{' REFTAG'}); }
     	    push (@{$l->{$tag}{'LANG_TAGS'}}, $lTag);
@@ -413,9 +412,10 @@ sub read
     	($l->{'TYPE'}, $l->{'FLAG'}, $nSub) = unpack("n3", $dat);
     	$fh->read($dat, $nSub * 2);
     	$j = 0;
-    	map { $l->{'SUB'}[$j]{' OFFSET'} = $_; } unpack("n*", $dat);
+        my @offsets = unpack("n*", $dat);
     	for ($j = 0; $j < $nSub; $j++)
     	{
+            $l->{'SUB'}[$j]{' OFFSET'} = $offsets[$j];
     	    $fh->seek($moff + $oLook + $l->{' OFFSET'} + $l->{'SUB'}[$j]{' OFFSET'}, 0);
 	        $self->read_sub($fh, $l, $j);
 	    }
@@ -466,7 +466,7 @@ sub out
 
 # First sort the features
     $i = 0;
-    $self->{'FEATURES'}{'FEAT_TAGS'} = [sort grep {length($_) == 4 || m/\s_\d+$/o} %{$self->{'FEATURES'}}]
+    $self->{'FEATURES'}{'FEAT_TAGS'} = [sort grep {m/^.{4}(?:\s_\d+)?$/o} %{$self->{'FEATURES'}}]
             if (!defined $self->{'FEATURES'}{'FEAT_TAGS'});
     foreach $t (@{$self->{'FEATURES'}{'FEAT_TAGS'}})
     { $self->{'FEATURES'}{$t}{'INDEX'} = $i++; }
@@ -494,15 +494,15 @@ sub out
     	{
     	    my ($def);
     	    $l = $tag->{$lTag};
-    	    next if (!defined $l || $l->{' REFTAG'} ne '');
+    	    next if (!defined $l || (defined $l->{' REFTAG'} && $l->{' REFTAG'} ne ''));
     	    $l->{' OFFSET'} = tell($fh) - $base - $oScript - $tag->{' OFFSET'};
     	    if (defined $l->{'DEFAULT'})
 #    	    { $def = $self->{'FEATURES'}{$l->{'FEATURES'}[$l->{'DEFAULT'}]}{'INDEX'}; }
             { $def = $l->{'DEFAULT'}; }
     	    else
     	    { $def = -1; }
-    	    $fh->print(pack("n*", $l->{'RE_ORDER'}, $def, $#{$l->{'FEATURES'}} + 1,
-    	            map {$self->{'FEATURES'}{$_}{'INDEX'}} @{$l->{'FEATURES'}}));
+    	    $fh->print(pack("n*", $l->{'RE_ORDER'} || 0, $def, $#{$l->{'FEATURES'}} + 1,
+    	            map {$self->{'FEATURES'}{$_}{'INDEX'} || 0} @{$l->{'FEATURES'}}));
     	}
     	$end = $fh->tell();
     	if ($tag->{'DEFAULT'}{' REFTAG'} || defined $tag->{'DEFAULT'}{'FEATURES'})
@@ -745,11 +745,11 @@ by storing in a string first and the return value is "";
 sub out_final
 {
     my ($fh, $out, $cache_list, $state) = @_;
-    my ($len) = length($out);
+    my ($len) = length($out || '');
     my ($base_loc) = $state ? 0 : $fh->tell();
     my ($loc, $t, $r, $s, $master_cache, $offs, $str);
 
-    $fh->print($out) unless $state;       # first output the current attempt
+    $fh->print($out || '') unless $state;       # first output the current attempt
     foreach $r (@$cache_list)
     {
         $offs = $r->[1];
@@ -775,7 +775,7 @@ sub out_final
     {
         $loc = $fh->tell();
         $fh->seek($base_loc, 0);
-        $fh->print($out);       # the corrected version
+        $fh->print($out || '');       # the corrected version
         $fh->seek($loc, 0);
     }
 }
@@ -967,6 +967,7 @@ sub out_context
     my ($self, $lookup, $fh, $type, $fmt, $ctables, $out, $num) = @_;
     my ($offc, $offd, $i, $j, $r, $t, $numd);
 
+    $out ||= '';
     if (($type == 4 || $type == 5 || $type == 6) && ($fmt == 1 || $fmt == 2))
     {
         my ($base_off);
@@ -1040,16 +1041,16 @@ sub out_context
     {
         $r = $lookup->{'RULES'}[0][0];
 		no strict 'refs';	# temp fix - more code needed (probably "if" statements in the event 'PRE' or 'POST' are empty)
-        $out .= pack('n2', $fmt, scalar @{$r->{'PRE'}});
+        $out .= pack('n2', $fmt, defined $r->{'PRE'} ? scalar @{$r->{'PRE'}} : 0);
         foreach $t (@{$r->{'PRE'}})
         { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
-        $out .= pack('n', scalar @{$r->{'MATCH'}});
+        $out .= pack('n', defined $r->{'MATCH'} ? scalar @{$r->{'MATCH'}} : 0);
         foreach $t (@{$r->{'MATCH'}})
         { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
-        $out .= pack('n', scalar @{$r->{'POST'}});
+        $out .= pack('n', defined $r->{'POST'} ? scalar @{$r->{'POST'}} : 0);
         foreach $t (@{$r->{'POST'}})
         { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
-        $out .= pack('n', scalar @{$r->{'ACTION'}});
+        $out .= pack('n', defined $r->{'ACTION'} ? scalar @{$r->{'ACTION'}} : 0);
         foreach $t (@{$r->{'ACTION'}})
         { $out .= pack('n2', @$t); }
     }

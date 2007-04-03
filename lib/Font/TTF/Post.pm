@@ -129,7 +129,7 @@ sub read
     my ($dat, $dat1, $i, $off, $c, $maxoff, $form, $angle, $numGlyphs);
     my ($fh) = $self->{' INFILE'};
 
-    $numGlyphs = $self->{' PARENT'}{'maxp'}->read->{'numGlyphs'};
+    $numGlyphs = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
     $self->SUPER::read or return $self;
     init unless ($fields{'FormatType'});
     $fh->read($dat, 32);
@@ -231,7 +231,8 @@ sub out
 
     if (int($self->{'FormatType'} + .5) == 2)
     {
-        my (@ind, $count);
+        my (@ind);
+        my ($count) = 0;
         
         $fh->print(pack("n", $num));
         for ($i = 0; $i < $num; $i++)

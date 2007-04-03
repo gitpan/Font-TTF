@@ -116,12 +116,15 @@ sub read
 
     $self->SUPER::read or return $self;
     $bloc = $fh->tell();
-    $fh->read($dat, 10);
-    ($self->{'Version'}, $goff, $aoff, $loff) = TTF_Unpack('fS3', $dat);
     if ($new_gdef)
     {
         $fh->read($dat, 12);
         ($self->{'Version'}, $goff, $aoff, $loff, $moff) = TTF_Unpack('fS4', $dat);
+    }
+    else
+    {
+        $fh->read($dat, 10);
+        ($self->{'Version'}, $goff, $aoff, $loff) = TTF_Unpack('fS3', $dat);
     }
 
     if ($goff > 0)
@@ -130,7 +133,7 @@ sub read
         $self->{'GLYPH'} = Font::TTF::Coverage->new(0)->read($fh);
     }
 
-    if ($new_gdef && $moff > 0)
+    if ($new_gdef && $moff > 0 && $moff < $self->{' LENGTH'})
     {
         $fh->seek($moff + $boff, 0);
         $self->{'MARKS'} = Font::TTF::Coverage->new(0)->read($fh);
