@@ -106,7 +106,7 @@ $utf8 = 1;
         else
         { $win_langs{$i + 0x400} = $ms_langids[$i][0]; }
     }
-    %langs_win = map {$win_langs{$_} => $_} keys %win_langs;
+    %langs_win = map {my ($t) = $win_langs{$_}; my (@res) = ($t => $_); push (@res, $t => $_) if ($t =~ s/-.*$//o && ($_ & 0xFC00) == 0x400); @res} keys %win_langs;
     $i = 0;
     %langs_mac = map {$_ => $i++} @mac_langs;
 }
@@ -333,32 +333,53 @@ sub find_name
 }
 
 
-=head2 set_name($nid, $str, $lang)
+=head2 set_name($nid, $str[, $lang[, @cover]])
 
 Sets the given name id string to $str for all platforms and encodings that
 this module can handle. If $lang is set, it is interpretted as a language
 tag and if the particular language of a string is found to match, then
 that string is changed, otherwise no change occurs.
 
-Notice that this function does not add any names to the table.
+If supplied, @cover should be a list of references to two-element arrays 
+containing pid,eid pairs that should added to the name table if not already present.
+
+This function does not add any names to the table unless @cover is supplied. 
 
 =cut
 
 sub set_name
 {
-    my ($self, $nid, $str, $lang) = @_;
-    my ($pid, $eid, $lid);
+    my ($self, $nid, $str, $lang, @cover) = @_;
+    my ($pid, $eid, $lid, $c);
 
     foreach $pid (0 .. $#{$self->{'strings'}[$nid]})
     {
+        my $strNL = $str;
+        $strNL =~ s/\n/\r\n/og  if $pid == 3;
+        $strNL =~ s/\n/\r/og    if $pid == 1;
         foreach $eid (0 .. $#{$self->{'strings'}[$nid][$pid]})
         {
             foreach $lid (keys %{$self->{'strings'}[$nid][$pid][$eid]})
             {
                 next unless (!defined $lang || $self->match_lang($pid, $lid, $lang));
-                $self->{'strings'}[$nid][$pid][$eid]{$lid} = $str;
+                $self->{'strings'}[$nid][$pid][$eid]{$lid} = $strNL;
+                foreach $c (0 .. scalar @cover)
+                {
+                    next unless ($cover[$c][0] == $pid && $cover[$c][1] == $eid);
+                    delete $cover[$c];
+                    last;
+                }
             }
         }
+    }
+    foreach $c (@cover)
+    {
+        my ($pid, $eid) = @{$c};
+        my ($lid) = $self->find_lang($pid, $lang);
+        my $strNL = $str;
+        $strNL =~ s/\n/\r\n/og  if $pid == 3;
+        $strNL =~ s/\n/\r/og    if $pid == 1;
+        $self->{'strings'}[$nid][$pid][$eid]{$lid} = $strNL;
     }
     return $self;
 }
@@ -558,7 +579,7 @@ EOT
 );
 #'
 
-@ms_langids = ( [],
+@ms_langids = ( [""],
     ['ar', ["-SA", "-IQ", "-EG", "-LY", "-DZ", "-MA", "-TN", 
             "-OM", "-YE", "-SY", "-JO", "-LB", "-KW", "-AE",
             "-BH", "-QA"]],

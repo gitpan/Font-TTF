@@ -54,6 +54,7 @@ lib/Font/TTF/Prop.pm
 lib/Font/TTF/PSNames.pm
 lib/Font/TTF/Segarr.pm
 lib/Font/TTF/Table.pm
+lib/Font/TTF/Tags.pm
 lib/Font/TTF/Ttc.pm
 lib/Font/TTF/Ttopen.pm
 lib/Font/TTF/Useall.pm
@@ -68,3 +69,4 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 META.yml
 README.TXT
+TODO

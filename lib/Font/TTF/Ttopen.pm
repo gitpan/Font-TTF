@@ -413,10 +413,19 @@ sub read
     	$fh->read($dat, $nSub * 2);
     	$j = 0;
         my @offsets = unpack("n*", $dat);
+        my $isExtension = ($l->{'TYPE'} == $self->extension());
     	for ($j = 0; $j < $nSub; $j++)
     	{
-            $l->{'SUB'}[$j]{' OFFSET'} = $offsets[$j];
-    	    $fh->seek($moff + $oLook + $l->{' OFFSET'} + $l->{'SUB'}[$j]{' OFFSET'}, 0);
+    	    $l->{'SUB'}[$j]{' OFFSET'} = $offsets[$j];
+       	    $fh->seek($moff + $oLook + $l->{' OFFSET'} + $l->{'SUB'}[$j]{' OFFSET'}, 0);
+    	    if ($isExtension)
+    	    {
+    	        $fh->read($dat, 8);
+    	        my $longOff;
+    	        (undef, $l->{'TYPE'}, $longOff) = unpack("nnN", $dat);
+    	        $l->{'SUB'}[$j]{' OFFSET'} += $longOff;
+        	    $fh->seek($moff + $oLook + $l->{' OFFSET'} + $l->{'SUB'}[$j]{' OFFSET'}, 0);
+            }
 	        $self->read_sub($fh, $l, $j);
 	    }
     }
@@ -460,7 +469,7 @@ sub out
 {
     my ($self, $fh) = @_;
     my ($i, $j, $base, $off, $tag, $t, $l, $lTag, $oScript, @script, @tags);
-    my ($end, $nTags, @offs, $oFeat, $oLook, $nSub, $nSubs, $big);
+    my ($end, $nTags, @offs, $oFeat, $oLook, $nSub, $nSubs, $big, $out);
 
     return $self->SUPER::out($fh) unless $self->{' read'};
 
@@ -600,12 +609,16 @@ sub out
         }
         else
         { $end = $tag->{' EXT_OFFSET'}; }
-        @offs = ();
+        my (@offs, $out, @refs);
         for ($j = 0; $j < $nSub; $j++)
         {
-            push(@offs, tell($fh) - $end);
-            $self->out_sub($fh, $tag, $j);
+            my ($ctables) = {};
+            my ($base) = length($out);
+            push(@offs, tell($fh) - $end + $base);
+            $out .= $self->out_sub($fh, $tag, $j, $ctables, $base);
+            push (@refs, [$ctables, $base]);
         }
+        out_final($fh, $out, \@refs);
         $end = $fh->tell();
         if (!defined $big)
         {
@@ -747,7 +760,7 @@ sub out_final
     my ($fh, $out, $cache_list, $state) = @_;
     my ($len) = length($out || '');
     my ($base_loc) = $state ? 0 : $fh->tell();
-    my ($loc, $t, $r, $s, $master_cache, $offs, $str);
+    my ($loc, $t, $r, $s, $master_cache, $offs, $str, %vecs);
 
     $fh->print($out || '') unless $state;       # first output the current attempt
     foreach $r (@$cache_list)
@@ -758,12 +771,19 @@ sub out_final
             $str = "$t";
             if (!defined $master_cache->{$str})
             {
-                $master_cache->{$str} = ($state ? length($out) : $fh->tell())
-                                                            - $base_loc;
-                if ($state)
-                { $out .= $r->[0]{$str}[0]->out($fh, 1); }
+                my ($vec) = $r->[0]{$str}[0]->signature();
+                if ($vecs{$vec})
+                { $master_cache->{$str} = $master_cache->{$vecs{$vec}}; }
                 else
-                { $r->[0]{$str}[0]->out($fh, 0); }
+                {
+                    $vecs{$vec} = $str;
+                    $master_cache->{$str} = ($state ? length($out) : $fh->tell())
+                                                                       - $base_loc;
+                    if ($state)
+                    { $out .= $r->[0]{$str}[0]->out($fh, 1); }
+                    else
+                    { $r->[0]{$str}[0]->out($fh, 0); }
+                }
             }
             foreach $s (@{$r->[0]{$str}[1]})
             { substr($out, $s, 2) = pack('n', $master_cache->{$str} - $offs); }
@@ -964,7 +984,7 @@ in a GSUB table so calling from GPOS should adjust the value accordingly.
 
 sub out_context
 {
-    my ($self, $lookup, $fh, $type, $fmt, $ctables, $out, $num) = @_;
+    my ($self, $lookup, $fh, $type, $fmt, $ctables, $out, $num, $base) = @_;
     my ($offc, $offd, $i, $j, $r, $t, $numd);
 
     $out ||= '';
@@ -974,20 +994,20 @@ sub out_context
         
         if ($fmt == 1)
         {
-            $out = pack("nnn", $fmt, Font::TTF::Ttopen::ref_cache($lookup->{'COVERAGE'}, $ctables, 2),
+            $out = pack("nnn", $fmt, Font::TTF::Ttopen::ref_cache($lookup->{'COVERAGE'}, $ctables, 2 + $base),
                             $num);
             $base_off = 6;
         } elsif ($type == 5)
         {
-            $out = pack("nnnn", $fmt, Font::TTF::Ttopen::ref_cache($lookup->{'COVERAGE'}, $ctables, 2),
-                            Font::TTF::Ttopen::ref_cache($lookup->{'CLASS'}, $ctables, 4), $num);
+            $out = pack("nnnn", $fmt, Font::TTF::Ttopen::ref_cache($lookup->{'COVERAGE'}, $ctables, 2 + $base),
+                            Font::TTF::Ttopen::ref_cache($lookup->{'CLASS'}, $ctables, 4 + $base), $num);
             $base_off = 8;
         } elsif ($type == 6)
         {
-            $out = pack("n6", $fmt, Font::TTF::Ttopen::ref_cache($lookup->{'COVERAGE'}, $ctables, 2),
-                                Font::TTF::Ttopen::ref_cache($lookup->{'PRE_CLASS'}, $ctables, 4),
-                                Font::TTF::Ttopen::ref_cache($lookup->{'CLASS'}, $ctables, 6),
-                                Font::TTF::Ttopen::ref_cache($lookup->{'POST_CLASS'}, $ctables, 8),
+            $out = pack("n6", $fmt, Font::TTF::Ttopen::ref_cache($lookup->{'COVERAGE'}, $ctables, 2 + $base),
+                                Font::TTF::Ttopen::ref_cache($lookup->{'PRE_CLASS'}, $ctables, 4 + $base),
+                                Font::TTF::Ttopen::ref_cache($lookup->{'CLASS'}, $ctables, 6 + $base),
+                                Font::TTF::Ttopen::ref_cache($lookup->{'POST_CLASS'}, $ctables, 8 + $base),
                                 $num);
             $base_off = 12;
         }
@@ -1034,7 +1054,7 @@ sub out_context
         $out .= pack('n3', $fmt, $#{$lookup->{'RULES'}[0][0]{'MATCH'}} + 1,
                                 $#{$lookup->{'RULES'}[0][0]{'ACTION'}} + 1);
         foreach $t (@{$lookup->{'RULES'}[0][0]{'MATCH'}})
-        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
+        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out) + $base)); }
         foreach $t (@{$lookup->{'RULES'}[0][0]{'ACTION'}})
         { $out .= pack('n2', @$t); }
     } elsif ($type == 6 && $fmt == 3)
@@ -1043,13 +1063,13 @@ sub out_context
 		no strict 'refs';	# temp fix - more code needed (probably "if" statements in the event 'PRE' or 'POST' are empty)
         $out .= pack('n2', $fmt, defined $r->{'PRE'} ? scalar @{$r->{'PRE'}} : 0);
         foreach $t (@{$r->{'PRE'}})
-        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
+        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out) + $base)); }
         $out .= pack('n', defined $r->{'MATCH'} ? scalar @{$r->{'MATCH'}} : 0);
         foreach $t (@{$r->{'MATCH'}})
-        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
+        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out) + $base)); }
         $out .= pack('n', defined $r->{'POST'} ? scalar @{$r->{'POST'}} : 0);
         foreach $t (@{$r->{'POST'}})
-        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out))); }
+        { $out .= pack('n', Font::TTF::Ttopen::ref_cache($t, $ctables, length($out) + $base)); }
         $out .= pack('n', defined $r->{'ACTION'} ? scalar @{$r->{'ACTION'}} : 0);
         foreach $t (@{$r->{'ACTION'}})
         { $out .= pack('n2', @$t); }
