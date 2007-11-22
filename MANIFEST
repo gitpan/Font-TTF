@@ -69,4 +69,7 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 META.yml
 README.TXT
+t/OFL.txt
+t/testfont.ttf
+t/ttfcopy.t
 TODO
