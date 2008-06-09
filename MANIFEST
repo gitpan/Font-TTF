@@ -1,5 +1,6 @@
 COPYING
 lib/Font/TTF.pm
+lib/Font/TTF/.Ttopen.pm.swp
 lib/Font/TTF/AATKern.pm
 lib/Font/TTF/AATutils.pm
 lib/Font/TTF/Anchor.pm
@@ -9,6 +10,7 @@ lib/Font/TTF/Cmap.pm
 lib/Font/TTF/Coverage.pm
 lib/Font/TTF/Cvt_.pm
 lib/Font/TTF/Delta.pm
+lib/Font/TTF/Dumper.pm
 lib/Font/TTF/EBDT.pm
 lib/Font/TTF/EBLC.pm
 lib/Font/TTF/Fdsc.pm
@@ -20,6 +22,7 @@ lib/Font/TTF/GDEF.pm
 lib/Font/TTF/Glyf.pm
 lib/Font/TTF/Glyph.pm
 lib/Font/TTF/GPOS.pm
+lib/Font/TTF/GrFeat.pm
 lib/Font/TTF/GSUB.pm
 lib/Font/TTF/Hdmx.pm
 lib/Font/TTF/Head.pm
@@ -47,6 +50,7 @@ lib/Font/TTF/Name.pm
 lib/Font/TTF/OldCmap.pm
 lib/Font/TTF/OldMort.pm
 lib/Font/TTF/OS_2.pm
+lib/Font/TTF/OTTags.pm
 lib/Font/TTF/PCLT.pm
 lib/Font/TTF/Post.pm
 lib/Font/TTF/Prep.pm
@@ -54,7 +58,6 @@ lib/Font/TTF/Prop.pm
 lib/Font/TTF/PSNames.pm
 lib/Font/TTF/Segarr.pm
 lib/Font/TTF/Table.pm
-lib/Font/TTF/Tags.pm
 lib/Font/TTF/Ttc.pm
 lib/Font/TTF/Ttopen.pm
 lib/Font/TTF/Useall.pm
@@ -70,6 +73,7 @@ MANIFEST.SKIP
 META.yml
 README.TXT
 t/OFL.txt
+t/tags.t
 t/testfont.ttf
 t/ttfcopy.t
 TODO

@@ -40,6 +40,7 @@ defaults to L<Font::TTF::Table>. The current tables which are supported are:
     table       Font::TTF::Table      - for unknown tables
     EBDT        Font::TTF::EBDT
     EBLC        Font::TTF::EBLC
+    Feat        Font::TTF::GrFeat
     GDEF        Font::TTF::GDEF
     GPOS        Font::TTF::GPOS
     GSUB        Font::TTF::GSUB
@@ -72,7 +73,7 @@ defaults to L<Font::TTF::Table>. The current tables which are supported are:
 Links are:
 
 L<Font::TTF::Table> 
-L<Font::TTF::EBDT> L<Font::TTF::EBLC>
+L<Font::TTF::EBDT> L<Font::TTF::EBLC> L<Font::TTF::GrFeat>
 L<Font::TTF::GDEF> L<Font::TTF::GPOS> L<Font::TTF::GSUB> L<Font::TTF::LTSH>
 L<Font::TTF::OS_2> L<Font::TTF::PCLT> L<Font::TTF::Bsln> L<Font::TTF::Cmap> L<Font::TTF::Cvt_>
 L<Font::TTF::Fdsc> L<Font::TTF::Feat> L<Font::TTF::Fmtx> L<Font::TTF::Fpgm> L<Font::TTF::Glyf>
@@ -94,6 +95,10 @@ characters which make up table names).
 This is used during output to disable the creation of the file checksum in the
 head table. For example, during DSIG table creation, this flag will be set to
 ensure that the file checksum is left at zero.
+
+=item noharmony
+
+If set, do not harmonize the script and lang trees of GPOS and GSUB tables. See L<Font::TTF::Ttopen> for more info.
 
 =item fname (R)
 
@@ -168,6 +173,7 @@ $VERSION = 0.37;    # MJPH       7-OCT-2005     Force hhea update if dirty, give
         'table' => 'Font::TTF::Table',
         'EBDT' => 'Font::TTF::EBDT',
         'EBLC' => 'Font::TTF::EBLC',
+        'Feat' => 'Font::TTF::GrFeat',
         'GDEF' => 'Font::TTF::GDEF',
         'GPOS' => 'Font::TTF::GPOS',
         'GSUB' => 'Font::TTF::GSUB',

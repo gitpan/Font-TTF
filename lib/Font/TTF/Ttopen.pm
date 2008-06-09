@@ -667,6 +667,115 @@ start of the subtable to be output
 sub out_sub
 { }
 
+=head2 $t->dirty
+
+Setting GPOS or GSUB dirty means that OS/2 may need updating, so set it dirty.
+
+=cut
+
+sub dirty
+{
+    my ($self, $val) = @_;
+    my $res = $self->SUPER::dirty ($val);
+    $self->{' PARENT'}{'OS/2'}->read->dirty($val) if exists $self->{' PARENT'}{'OS/2'};
+    $res;
+}
+
+=head2 $t->maxContext
+
+Returns the length of the longest opentype rule in this table.
+
+=cut
+
+sub maxContext
+{
+    my ($self) = @_;
+    
+    # Make sure table is read
+    $self->read;
+
+    # Calculate my contribution to OS/2 usMaxContext
+    
+    my ($maxcontext, $l, $s, $r, $m);
+   
+    for $l (@{$self->{'LOOKUP'}})        # Examine each lookup
+    {
+        for $s (@{$l->{'SUB'}})         # Multiple possible subtables for this lookup
+        {
+            for $r (@{$s->{'RULES'}})   # One ruleset for each covered glyph
+            {
+                for $m (@{$r})          # Multiple possible matches for this covered glyph 
+                {
+                    my $lgt;
+                    $lgt++ if exists $s->{'COVERAGE'};  # Count 1 for the coverage table if it exists
+                    for (qw(MATCH PRE POST))
+                    {
+                        $lgt += @{$m->{$_}} if exists $m->{$_};
+                    }
+                    $maxcontext = $lgt if $lgt > $maxcontext;
+                }
+            }
+            
+        }
+    }
+    
+    $maxcontext;    
+}    
+
+
+=head2 $t->update
+
+Unless $t->{' PARENT'}{' noharmony'} is true, update will make sure that GPOS and GSUB include 
+the same scripts and languages. Any added scripts and languages will have empty feature sets.
+
+=cut
+
+# Assumes we are called on both GSUB and GPOS. So simply ADDS scripts and languages to $self that it finds
+# in the other table.
+
+sub update
+{
+    my ($self) = @_;
+    
+    return undef unless ($self->SUPER::update);
+
+    # Enforce script/lang congruence unless asked not to:
+    return $self if $self->{' PARENT'}{' noharmony'};
+
+    # Find my sibling (GSUB or GPOS, depending on which I am)
+    my $sibling = ref($self) eq 'Font::TTF::GSUB' ? 'GPOS' : ref($self) eq 'Font::TTF::GPOS' ? 'GSUB' : undef;
+    return $self unless $sibling && exists $self->{' PARENT'}{$sibling};
+    $sibling = $self->{' PARENT'}{$sibling};
+    next unless defined $sibling;
+    
+    # Look through scripts defined in sibling:
+    for my $sTag (grep {length($_) == 4} keys %{$sibling->{'SCRIPTS'}})
+    {
+        my $sibScript = $sibling->{'SCRIPTS'}{$sTag};
+        $sibScript = $sibling->{$sibScript->{' REFTAG'}} if exists $sibScript->{' REFTAG'} && $sibScript->{' REFTAG'} ne '';
+        
+        $self->{'SCRIPTS'}{$sTag} = {} unless defined $self->{'SCRIPTS'}{$sTag}; # Create script if not present in $self
+        
+        my $myScript = $self->{'SCRIPTS'}{$sTag};
+        $myScript = $self->{$myScript->{' REFTAG'}} if exists $myScript->{' REFTAG'} && $myScript->{' REFTAG'} ne '';
+                
+        foreach my $lTag (@{$sibScript->{'LANG_TAGS'}})
+        {
+            # Ok, found a script/lang that is in our sibling.
+            next if exists $myScript->{$lTag};  # Already in $self
+            
+            # Need to create this lang:
+            push @{$myScript->{'LANG_TAGS'}}, $lTag;
+            $myScript->{$lTag} = { 'FEATURES' => [] };
+        }
+        unless (defined $myScript->{'DEFAULT'})
+        {
+            # Create default lang for this script. Link to 'dflt' if it exists
+            $myScript->{'DEFAULT'} = exists $myScript->{'dflt'} ? {' REFTAG' => 'dflt'} : { 'FEATURES' => [] };
+        }
+    }
+    $self;
+}
 
 =head1 Internal Functions & Methods
 
@@ -734,8 +843,9 @@ sub ref_cache
     my ($obj, $cache, $offset) = @_;
 
     return 0 unless defined $obj;
-    $cache->{"$obj"}[0] = $obj unless defined $cache->{"$obj"};
-    push (@{$cache->{"$obj"}[1]}, $offset);
+    unless (defined $cache->{"$obj"})
+    { push (@{$cache->{''}}, $obj); }
+    push (@{$cache->{"$obj"}}, $offset);
     return 0;
 }
 
@@ -766,12 +876,12 @@ sub out_final
     foreach $r (@$cache_list)
     {
         $offs = $r->[1];
-        foreach $t (sort keys %{$r->[0]})
+        foreach $t (@{$r->[0]{''}})
         {
             $str = "$t";
             if (!defined $master_cache->{$str})
             {
-                my ($vec) = $r->[0]{$str}[0]->signature();
+                my ($vec) = $t->signature();
                 if ($vecs{$vec})
                 { $master_cache->{$str} = $master_cache->{$vecs{$vec}}; }
                 else
@@ -780,12 +890,12 @@ sub out_final
                     $master_cache->{$str} = ($state ? length($out) : $fh->tell())
                                                                        - $base_loc;
                     if ($state)
-                    { $out .= $r->[0]{$str}[0]->out($fh, 1); }
+                    { $out .= $t->out($fh, 1); }
                     else
-                    { $r->[0]{$str}[0]->out($fh, 0); }
+                    { $t->out($fh, 0); }
                 }
             }
-            foreach $s (@{$r->[0]{$str}[1]})
+            foreach $s (@{$r->[0]{$str}})
             { substr($out, $s, 2) = pack('n', $master_cache->{$str} - $offs); }
         }
     }
