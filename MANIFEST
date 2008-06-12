@@ -1,6 +1,6 @@
+Changes
 COPYING
 lib/Font/TTF.pm
-lib/Font/TTF/.Ttopen.pm.swp
 lib/Font/TTF/AATKern.pm
 lib/Font/TTF/AATutils.pm
 lib/Font/TTF/Anchor.pm
