@@ -2,7 +2,7 @@ package Font::TTF::Glyph;
 
 =head1 NAME
 
-Font::TTF::Glyph - Holds a single glyph's information
+Font::TTF::Glyph - Holds a information for a single glyph
 
 =head1 DESCRIPTION
 
@@ -153,7 +153,7 @@ by calling the C<update> method whenever any of the glyph content changes.
 
 Location relative to the start of the glyf table. This variable is only active
 whilst the output process is going on. It is used to inform the location table
-where the glyph's location is, since the glyf table is output before the loca
+where the glyph is located, since the glyf table is output before the loca
 table due to alphabetical ordering.
 
 =item OUTLEN (P)
@@ -168,8 +168,8 @@ calling C<out> or C<out_dat>.
 =head2 Editing
 
 If you want to edit a glyph in some way, then you should read_dat the glyph, then
-make your changes and then update the glyph or set the $g->{' isdirty'} variable.
-It is the application's duty to ensure that the following instance variables are
+make your changes and then update the glyph or set the $g->{' isDirty'} variable.
+The application must ensure that the following instance variables are
 correct, from which update will calculate the rest, including the bounding box
 information.
 
@@ -240,7 +240,7 @@ sub new
 
 =head2 $g->read
 
-Reads the header component of the glyph (bounding box, etc.) and also the
+Reads the header component of the glyph (numberOfContours and bounding box) and also the
 glyph content, but into a data field rather than breaking it down into
 its constituent structures. Use read_dat for this.
 
@@ -252,7 +252,7 @@ sub read
     my ($fh) = $self->{' INFILE'};
     my ($dat);
 
-    return $self if ($self->{' read'} > 0);
+    return $self if (defined $self->{' read'} && $self->{' read'} > 0);
     $self->{' read'} = 1;
     $fh->seek($self->{' LOC'} + $self->{' BASE'}, 0);
     $fh->read($self->{' DAT'}, $self->{' LEN'});
@@ -264,8 +264,7 @@ sub read
 =head2 $g->read_dat
 
 Reads the contents of the glyph (components and curves, etc.) from the memory
-store C<DAT> into structures within the object. Then, to indicate where the
-master form of the data is, it deletes the C<DAT> instance variable.
+store C<DAT> into structures within the object. 
 
 =cut
 
@@ -480,23 +479,37 @@ sub XML_element
     $self;    
 }
 
+=head2 $g->dirty($val)
+
+This sets the dirty flag to the given value or 1 if no given value. It returns the
+value of the flag
+
+=cut
+
+sub dirty
+{
+    my ($self, $val) = @_;
+    my ($res) = $self->{' isDirty'};
+
+    $self->{' isDirty'} = defined $val ? $val : 1;
+    $res;
+}
 
 =head2 $g->update
 
 Generates a C<$self->{'DAT'}> from the internal structures, if the data has
 been read into structures in the first place. If you are building a glyph
-from scratch you will need to set the instance variable C<' read'> to 2 (or
-something > 1) for the update to work.
+from scratch you will need to set the instance variable C<' isDirty'>.
 
 =cut
 
 sub update
 {
     my ($self) = @_;
-    my ($dat, $loc, $len, $flag, $x, $y, $i, $comp, $num);
+    my ($dat, $loc, $len, $flag, $x, $y, $i, $comp, $num, @rflags, $repeat);
 
-    return $self unless (defined $self->{' read'} && $self->{' read'} > 1);
-    $self->update_bbox;
+    return $self unless ($self->{' isDirty'});
+    $self->read_dat->update_bbox;
     $self->{' DAT'} = TTF_Out_Fields($self, \%fields, 10);
     $num = $self->{'numberOfContours'};
     if ($num > 0)
@@ -505,6 +518,7 @@ sub update
         $len = $self->{'instLen'};
         $self->{' DAT'} .= pack("n", $len);
         $self->{' DAT'} .= pack("a" . $len, substr($self->{'hints'}, 0, $len)) if ($len > 0);
+        $repeat = 0;
         for ($i = 0; $i < $self->{'numPoints'}; $i++)
         {
             $flag = $self->{'flags'}[$i] & 1;
@@ -529,9 +543,28 @@ sub update
                 $flag |= 4;
                 $flag |= 32 if ($y >= 0);
             }
-            $self->{' DAT'} .= pack("C", $flag);                    # sorry no repeats
+            if ($i > 0 && $rflags[-1] == $flag && $repeat < 255)
+            {
+            	$repeat++;
+            } else
+            {
+            	if ($repeat)
+            	{
+            		$rflags[-1] |= 8;
+            		push @rflags, $repeat;
+            	}
+            	push @rflags, $flag;
+            	$repeat = 0;
+            } 
             $self->{'flags'}[$i] = $flag;
         }
+		# Add final repeat if needed, then pack up the flag bytes:
+    	if ($repeat)
+    	{
+    		$rflags[-1] |= 8;
+    		push @rflags, $repeat;
+    	}
+        $self->{' DAT'} .= pack("C*", @rflags);	
         for ($i = 0; $i < $self->{'numPoints'}; $i++)
         {
             $flag = $self->{'flags'}[$i];
@@ -626,7 +659,7 @@ sub update_bbox
     my ($self) = @_;
     my ($num, $maxx, $minx, $maxy, $miny, $i, $comp, $x, $y, $compg);
 
-    return $self unless $self->{' read'} > 1;       # only if read_dat done
+    return $self unless (defined $self->{' read'} && $self->{' read'} > 1);       # only if read_dat done
     $miny = $minx = 65537; $maxx = $maxy = -65537;
     $num = $self->{'numberOfContours'};
     if ($num > 0)

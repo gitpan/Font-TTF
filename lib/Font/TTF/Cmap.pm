@@ -79,11 +79,12 @@ fill in the segmented array accordingly.
 sub read
 {
     my ($self) = @_;
+    $self->SUPER::read or return $self;
+
     my ($dat, $i, $j, $k, $id, @ids, $s);
     my ($start, $end, $range, $delta, $form, $len, $num, $ver, $sg);
     my ($fh) = $self->{' INFILE'};
 
-    $self->SUPER::read or return $self;
     $fh->read($dat, 4);
     $self->{'Num'} = unpack("x2n", $dat);
     $self->{'Tables'} = [];
@@ -538,6 +539,50 @@ sub XML_element
     { $fh->printf("%s<map code='%04X' glyph='%s'/>\n", $depth . $context->{'indent'}, $i, $val->{$i}); }
     $fh->print("$depth</mappings>\n");
     $self;
+}
+
+=head2 $t->update
+
+Tidies the cmap table.
+
+Removes MS Fmt12 cmap if it is no longer needed.
+
+Removes from all cmaps any codepoint that map to GID=0. Note that such entries will
+be re-introduced as necessary depending on the cmap format.
+
+=cut
+
+sub update
+{
+    my ($self) = @_;
+    my ($max, $code, $gid, @keep);
+    
+    return undef unless ($self->SUPER::update);
+
+    foreach my $s (@{$self->{'Tables'}})
+    {
+    	$max = 0;
+    	while (($code, $gid) = each %{$s->{'val'}})
+    	{
+    		if ($gid)
+    		{
+    			# remember max USV
+    			$max = $code if $max < $code;
+    		}
+    		else
+    		{
+    			# Remove unneeded key
+    			delete $s->{'val'}{$code};  # nb: this is a safe delete according to perldoc perlfunc.
+    		}
+    	}
+    	push @keep, $s unless $s->{'Platform'} == 3 && $s->{'Encoding'} == 10 && $s->{'Format'} == 12 && $max <= 0xFFFF;
+    }
+    
+    $self->{'Tables'} = [ @keep ];	
+    
+    delete $self->{' mstable'};		# Force rediscovery of this.
+	
+	$self;
 }
 
 =head2 @map = $t->reverse(%opt)

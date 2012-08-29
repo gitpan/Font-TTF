@@ -195,8 +195,8 @@ sub print
 
 	$features = $self->{'features'};
 	foreach (@$features) {
-		$fh->printf("Feature %d, %s, default: %d name %d # '%s'\n",
-					$_->{'feature'},
+		$fh->printf("Feature %s, %s, default: %d name %d # '%s'\n",
+					$_->{'feature'} > 0x01000000 ? '"' . $self->num_to_tag($_->{'feature'}) . '"' : $_->{'feature'}, 
 					($_->{'exclusive'} ? "exclusive" : "additive"),
 					$_->{'default'}, 
 					$_->{'name'},
@@ -229,6 +229,55 @@ sub settingName
 				. (($setting & 1) == 0 ? " On" : " Off");
 
 	($featureName, $settingName);
+}
+
+=head2 $t->tag_to_num ($feat_str)
+
+Convert an alphanumeric feature id tag (string) to a number (32-bit).
+Tags are normally 4 chars. Graphite ignores space
+padding if it is present, so we do the same here.
+
+=cut
+
+sub tag_to_num
+{
+	my ($self, $feat_tag) = @_;
+	my $new_feat_num;
+	
+	if ($feat_tag > 0)
+		{$new_feat_num = $feat_tag;}	# already a number, so just return it.
+	else
+	{
+		$feat_tag =~ s/[ \000]+$//o;	# strip trailing nulls or space
+		$new_feat_num = unpack('N', pack('a4', $feat_tag)); #adds null padding on right if less than 4 chars
+	}
+	
+	return $new_feat_num;
+}
+
+=head2 $t->num_to_tag ($feat_num)
+
+Convert a feature id number (32-bit) back to a tag (string).
+Trailing space or null padding is removed.
+Feature id numbers that do not represent alphanumeric tags 
+are returned unchanged.
+
+=cut
+
+sub num_to_tag
+{
+	my ($self, $feat_num) = @_;
+	my $new_feat_tag;
+	
+	if ($feat_num > 0x01000000)
+	{
+		$new_feat_tag = unpack('a4', pack('N', $feat_num));
+		$new_feat_tag =~ s/[ \000]+$//o;	# strip trailing nulls or space
+	}
+	else
+		{$new_feat_tag = $feat_num;}
+	
+	return $new_feat_tag;
 }
 
 1;

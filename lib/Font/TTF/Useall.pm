@@ -1,4 +1,11 @@
+use Font::TTF::Ttc;
+use Font::TTF::PSNames;
+use Font::TTF::OTTags;
+use Font::TTF::EBDT;
+use Font::TTF::EBLC;
+use Font::TTF::DSIG;
 use Font::TTF::Sill;
+use Font::TTF::Silf;
 use Font::TTF::Cvt_;
 use Font::TTF::Fpgm;
 use Font::TTF::Glyf;
@@ -50,5 +57,14 @@ use Font::TTF::Mort::Ligature;
 use Font::TTF::Mort::Noncontextual;
 use Font::TTF::Mort::Rearrangement;
 use Font::TTF::Mort::Subtable;
+use Font::TTF::Features::Cvar;
+use Font::TTF::Features::Size;
+use Font::TTF::Features::SSet;
+use Font::TTF::Woff;
+use Font::TTF::Woff::MetaData;
+use Font::TTF::Woff::PrivateData;
+use Font::TTF::Glat;
+use Font::TTF::Gloc;
+use Font::TTF::Dumper;
 
 1;
