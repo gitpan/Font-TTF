@@ -1,16 +1,17 @@
 --- #YAML:1.0
 name:               Font-TTF
-version:            1.00
+version:            1.01
 abstract:           TTF font support for Perl
 author:
     - martin_hosken@sil.org
-license:            unknown
+license:            artistic_2
 distribution_type:  module
 configure_requires:
     ExtUtils::MakeMaker:  0
 build_requires:
     ExtUtils::MakeMaker:  0
-requires:  {}
+requires:
+    IO::String:  0
 no_index:
     directory:
         - t

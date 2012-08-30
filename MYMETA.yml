@@ -9,7 +9,7 @@ configure_requires:
 distribution_type: module
 dynamic_config: 0
 generated_by: 'ExtUtils::MakeMaker version 6.57_05'
-license: unknown
+license: artistic_2
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
@@ -18,5 +18,6 @@ no_index:
   directory:
     - t
     - inc
-requires: {}
-version: 1.00
+requires:
+  IO::String: 0
+version: 1.01
