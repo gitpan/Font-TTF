@@ -20,4 +20,4 @@ no_index:
     - inc
 requires:
   IO::String: 0
-version: 1.01
+version: 1.02
