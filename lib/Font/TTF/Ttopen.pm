@@ -226,10 +226,6 @@ The index to a lookup to be acted upon on the match string.
 
 =back
 
-=back
-
-=back
-
 =item CLASS
 
 For those lookups which use class categories rather than glyph ids for matching
@@ -243,6 +239,8 @@ This is the offset to the class definition for the before match glyphs
 =item POST_CLASS
 
 This is the offset to the class definition for the after match glyphs.
+
+=back
 
 =item ACTION_TYPE
 
@@ -272,6 +270,7 @@ are stored relative to another base within the subtable.
 
 =back
 
+=back
 
 =head1 METHODS
 
@@ -287,7 +286,7 @@ use vars qw(@ISA %FeatParams);
 @ISA = qw(Font::TTF::Table);
 
 %FeatParams = (
-	'ss' => 'Font::TTF::Features::Sset',
+    'ss' => 'Font::TTF::Features::Sset',
   'cv' => 'Font::TTF::Features::Cvar',
   'si' => 'Font::TTF::Features::Size',
   );
@@ -345,20 +344,20 @@ sub read
         $l->{$tag}{'PARMS'}="";
         if ($oParms > 0)
         {
-        	$FType=$FeatParams{substr($tag,0,2)};
-        	if ($FType)
-        	{
-        		$t=$FType;
-        		if ($^O eq "MacOS")
-        			{ $t =~ s/^|::/:/oig; }
-        		else
-        			{ $t =~ s|::|/|oig; }
-		    		require "$t.pm";
-	       		$l->{$tag}{'PARMS'} = $FType->new( INFILE  => $fh,
-	       																			 OFFSET => $oFeat+$oParms);
+            $FType=$FeatParams{substr($tag,0,2)};
+            if ($FType)
+            {
+                $t=$FType;
+                if ($^O eq "MacOS")
+                    { $t =~ s/^|::/:/oig; }
+                else
+                    { $t =~ s|::|/|oig; }
+                    require "$t.pm";
+                $l->{$tag}{'PARMS'} = $FType->new( INFILE  => $fh,
+                                                                                     OFFSET => $oFeat+$oParms);
             $l->{$tag}{'PARMS'}->read;
           }
-        }       		
+        }               
         
     }
 
@@ -412,6 +411,7 @@ sub read
         }
         foreach $lTag (@{$l->{$tag}{'LANG_TAGS'}}, 'DEFAULT')
         {
+        	# Make copies of referenced languages for each reference. 
             next unless $l->{$tag}{$lTag}{' REFTAG'};
             $temp = $l->{$tag}{$lTag}{' REFTAG'};
             $l->{$tag}{$lTag} = &copy($l->{$tag}{$temp});
@@ -445,8 +445,8 @@ sub read
         my @offsets = unpack("n*", $dat);
         if ($l->{'FLAG'} & 0x0010)
         {
-        	$fh->read($dat, 2);
-        	$l->{'FILTER'} = unpack("n", $dat);
+            $fh->read($dat, 2);
+            $l->{'FILTER'} = unpack("n", $dat);
         }
         my $isExtension = ($l->{'TYPE'} == $self->extension());
         for ($j = 0; $j < $nSub; $j++)
@@ -600,12 +600,12 @@ sub out
         $fh->print(pack("n*", 0, $#{$tag->{'LOOKUPS'}} + 1, @{$tag->{'LOOKUPS'}}));
         if ($tag->{'PARMS'})
         {
-        	$end = $fh->tell();
-        	$oParms = $end - $oFtable - $base - $oFeat;
-        	$fh->seek($oFtable + $base + $oFeat,0);
-        	$fh->print(pack("n",$oParms));
-        	$fh->seek($end,0);
-        	$tag->{'PARMS'}->out($fh);
+            $end = $fh->tell();
+            $oParms = $end - $oFtable - $base - $oFeat;
+            $fh->seek($oFtable + $base + $oFeat,0);
+            $fh->print(pack("n",$oParms));
+            $fh->seek($end,0);
+            $tag->{'PARMS'}->out($fh);
         }
     }
     $end = $fh->tell();
@@ -617,7 +617,7 @@ sub out
     $fh->seek($end, 0);
     $oLook = $end - $base;
     
-    # Start Lookup List Table
+    # LookupListTable (including room for offsets to LookupTables)
     $nTags = $#{$self->{'LOOKUP'}} + 1;
     $fh->print(pack("n", $nTags));
     $fh->print(pack("n", 0) x $nTags);
@@ -647,10 +647,12 @@ sub out
             {
                 $tag = $self->{'LOOKUP'}[$j];
                 $nSub = $self->num_sub($tag);
+                $tag->{' OFFSET'} = $fh->tell() - $base - $oLook; # offset to this extension lookup
+                # LookupTable (including actual offsets to subtables)
                 $fh->print(pack("nnn", $ext, $tag->{'FLAG'}, $nSub));
-                $fh->print(pack("n*", map {$_ * 8 + 6 + $nSub * 2} (0 .. $nSub-1)));    # BH 2004-03-04
+                $fh->print(pack("n*", map {6 + $nSub * 2 + $_ * 8 + $tag->{'FLAG'} & 0x0010 ? 2 : 0 } (0 .. $nSub-1)));
+                $fh->print(pack("n", $tag->{'FILTER'})) if $tag->{'FLAG'} & 0x0010;
                 $tag->{' EXT_OFFSET'} = $fh->tell();    # = first extension lookup subtable
-                $tag->{' OFFSET'} = $tag->{' EXT_OFFSET'} - $nSub * 2 - 6 - $base - $oLook; # offset to this extension lookup
                 for ($k = 0; $k < $nSub; $k++)
                 { $fh->print(pack('nnN', 1, $tag->{'TYPE'}, 0)); }
             }
@@ -662,18 +664,13 @@ sub out
         $nSub = $self->num_sub($tag);
         if (!defined $big)
         {
+            # LookupTable (including room for subtable offsets)
             $fh->print(pack("nnn", $tag->{'TYPE'}, $tag->{'FLAG'}, $nSub));
             $fh->print(pack("n", 0) x $nSub);
-            if (defined($tag->{'FILTER'}))
-            {
-            	$tag->{'FLAG'} |= 0x0010;
-            	$fh->print(pack("n", $tag->{'FILTER'}));
-            }
-            else
-            {	$tag->{'FLAG'} &= ~0x0010; }
+            $fh->print(pack("n", $tag->{'FILTER'})) if $tag->{'FLAG'} & 0x0010;
         }
         else
-        { $end = $tag->{' EXT_OFFSET'}; }
+        { $end = $tag->{' EXT_OFFSET'}; } # Extension offsets computed relative to start of first Extension subtable -- corrected later
         my (@offs, $out, @refs);
         for ($j = 0; $j < $nSub; $j++)
         {
@@ -773,7 +770,7 @@ sub maxContext
                 {
                     my $lgt;
                     $lgt++ if exists $s->{'COVERAGE'};  # Count 1 for the coverage table if it exists
-                    for (qw(MATCH POST))				# only Input and Lookahead sequences count (Lookbehind doesn't) -- see OT spec.
+                    for (qw(MATCH POST))                # only Input and Lookahead sequences count (Lookbehind doesn't) -- see OT spec.
                     {
                         $lgt += @{$m->{$_}} if exists $m->{$_};
                     }
@@ -789,6 +786,10 @@ sub maxContext
 
 
 =head2 $t->update
+
+Perform various housekeeping items:
+
+For all lookups, set/clear 0x0010 bit of flag words based on 'FILTER' value.
 
 Sort COVERAGE table and RULES for all lookups.
 
@@ -806,43 +807,56 @@ sub update
     
     return undef unless ($self->SUPER::update);
     
-    if (!$Font::TTF::Coverage::dontsort and defined ($self->{'LOOKUP'}))
+    if (defined ($self->{'LOOKUP'}))
     {
-        # Sort coverage tables and rules of all lookups by glyphID
-        # The lookup types that need to be sorted are:
-        #    GSUB: 1.2 2 3 4 5.1 6.1 8    (However GSUB type 8 lookups are not yet supported by Font::TTF)
-        #    GPOS: 1.2 2.1 3 4 5 6 7.1 8.1
-
-		for my $l (@{$self->{'LOOKUP'}})
+            
+        # make flag word agree with mark filter setting:
+        for my $l (@{$self->{'LOOKUP'}})
         {
-            next unless defined $l->{'SUB'};
-            for my $sub (@{$l->{'SUB'}})
+            if (defined $l->{'FILTER'})
+            { $l->{'FLAG'} |= 0x0010; }
+            else
+            { $l->{'FLAG'} &= ~0x0010; }
+        }
+        
+        unless ($Font::TTF::Coverage::dontsort)
+        {
+            # Sort coverage tables and rules of all lookups by glyphID
+            # The lookup types that need to be sorted are:
+            #    GSUB: 1.2 2 3 4 5.1 6.1 8    (However GSUB type 8 lookups are not yet supported by Font::TTF)
+            #    GPOS: 1.2 2.1 3 4 5 6 7.1 8.1
+            
+            for my $l (@{$self->{'LOOKUP'}})
             {
-            	if (defined $sub->{'COVERAGE'} and $sub->{'COVERAGE'}{'cover'} and !$sub->{'COVERAGE'}{'dontsort'})
-            	{
-            		# OK! Found a lookup with coverage table:
-            		my @map = $sub->{'COVERAGE'}->sort();
-	            	if (defined $sub->{'RULES'} and ($sub->{'MATCH_TYPE'} =~ /g/ or $sub->{'ACTION_TYPE'} =~ /[gvea]/))
-	            	{
-						# And also a RULES table which now needs to be re-sorted
-		                my $newrules = [];
-		                foreach (0 .. $#map)
-		                { push @{$newrules}, $sub->{'RULES'}[$map[$_]]; }
-		                $sub->{'RULES'} = $newrules;
-		            }
-	            }
-	                
-                # Special case for Mark positioning -- need to also sort the MarkArray
-                if (exists($sub->{'MARKS'}) and ref($sub->{'MATCH'}[0]) =~ /Cover/ and $sub->{'MATCH'}[0]{'cover'} and !$sub->{'MATCH'}[0]{'dontsort'})
+                next unless defined $l->{'SUB'};
+                for my $sub (@{$l->{'SUB'}})
                 {
-                	my @map = $sub->{'MATCH'}[0]->sort();
-                	my $newmarks = [];
-                	foreach (0 .. $#map)
-	                { push @{$newmarks}, $sub->{'MARKS'}[$map[$_]]; }
-	                $sub->{'MARKS'} = $newmarks;
+                    if (defined $sub->{'COVERAGE'} and $sub->{'COVERAGE'}{'cover'} and !$sub->{'COVERAGE'}{'dontsort'})
+                    {
+                        # OK! Found a lookup with coverage table:
+                        my @map = $sub->{'COVERAGE'}->sort();
+                        if (defined $sub->{'RULES'} and ($sub->{'MATCH_TYPE'} =~ /g/ or $sub->{'ACTION_TYPE'} =~ /[gvea]/))
+                        {
+                            # And also a RULES table which now needs to be re-sorted
+                            my $newrules = [];
+                            foreach (0 .. $#map)
+                            { push @{$newrules}, $sub->{'RULES'}[$map[$_]]; }
+                            $sub->{'RULES'} = $newrules;
+                        }
+                    }
+                        
+                    # Special case for Mark positioning -- need to also sort the MarkArray
+                    if (exists($sub->{'MARKS'}) and ref($sub->{'MATCH'}[0]) =~ /Cover/ and $sub->{'MATCH'}[0]{'cover'} and !$sub->{'MATCH'}[0]{'dontsort'})
+                    {
+                        my @map = $sub->{'MATCH'}[0]->sort();
+                        my $newmarks = [];
+                        foreach (0 .. $#map)
+                        { push @{$newmarks}, $sub->{'MARKS'}[$map[$_]]; }
+                        $sub->{'MARKS'} = $newmarks;
+                    }
                 }
             }
-		}
+        }
     }
 
     # Enforce script/lang congruence unless asked not to:
@@ -850,9 +864,8 @@ sub update
 
     # Find my sibling (GSUB or GPOS, depending on which I am)
     my $sibling = ref($self) eq 'Font::TTF::GSUB' ? 'GPOS' : ref($self) eq 'Font::TTF::GPOS' ? 'GSUB' : undef;
-    return $self unless $sibling && exists $self->{' PARENT'}{$sibling};
+    return $self unless $sibling && defined $self->{' PARENT'}{$sibling};
     $sibling = $self->{' PARENT'}{$sibling};
-    next unless defined $sibling;
     
     # Look through scripts defined in sibling:
     for my $sTag (grep {length($_) == 4} keys %{$sibling->{'SCRIPTS'}})
@@ -874,10 +887,11 @@ sub update
             push @{$myScript->{'LANG_TAGS'}}, $lTag;
             $myScript->{$lTag} = { 'FEATURES' => [] };
         }
-        unless (defined $myScript->{'DEFAULT'})
+
+        if (defined $sibScript->{'DEFAULT'} && !defined $myScript->{'DEFAULT'})
         {
-            # Create default lang for this script. Link to 'dflt' if it exists
-            $myScript->{'DEFAULT'} = exists $myScript->{'dflt'} ? {' REFTAG' => 'dflt'} : { 'FEATURES' => [] };
+            # Create default lang for this script.
+            $myScript->{'DEFAULT'} = { 'FEATURES' => [] };
         }
     }
     $self;
@@ -1004,8 +1018,8 @@ sub out_final
             }
             foreach (@{$r->[0]{$str}})
             {
-            	$s = pack($_->[1], $master_cache->{$str} - $offs);
-            	substr($out, $_->[0], length($s)) = $s;
+                $s = pack($_->[1], $master_cache->{$str} - $offs);
+                substr($out, $_->[0], length($s)) = $s;
             }
         }
     }
@@ -1297,6 +1311,9 @@ sub out_context
     $out;
 }
 
+1;
+
+
 =head1 BUGS
 
 =over 4
@@ -1311,10 +1328,17 @@ repeated if necessary. Within lookup sharing is possible.
 
 =head1 AUTHOR
 
-Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
-licensing.
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
 
 =cut
-
-1;
 

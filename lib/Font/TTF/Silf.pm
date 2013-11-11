@@ -223,7 +223,7 @@ There are maxRulePreContext - minRulePreContext + 1 of these.
 
 =item ruleSortKeys
 
-An array of sort keys one for each rule giving the length of the rule without its precontext.
+An array of sort keys one for each rule giving the length of the rule including its precontext.
 
 =item rulePreContexts
 
@@ -267,7 +267,7 @@ use vars qw(@ISA);
 =head2 @opcodes
 
 Each array holds the name of the opcode, the number of operand bytes and a string describing the operands.
-The characterse in the string have the following meaning:
+The characters in the string have the following meaning:
 
     c - lsb of class id
     C - msb of class id
@@ -290,18 +290,21 @@ our @opcodes = ( ["nop", 0, ""], ["push_byte", 1, "n"], ["push_byte_u", 1, "n"],
              ["push_short_u", 2, "Nn"], ["push_long", 4, "LlNn"], ["add", 0, ""], ["sub", 0, ""],
              ["mul", 0, ""], ["div", 0, ""], ["min", 0, ""], ["max", 0, ""],
              ["neg", 0, ""], ["trunc8", 0, ""], ["trunc16", 0, ""], ["cond", 0, ""],
-             ["and", 0, ""], ["or", 0, ""], ["not", 0, ""], ["equal", 0, ""],
+             ["and", 0, ""], ["or", 0, ""], ["not", 0, ""], ["equal", 0, ""],                                               # 16
              ["not_eq", 0, ""], ["less", 0, ""], ["gtr", 0, ""], ["less_eq", 0, ""],
              ["gtr_eq", 0, ""], ["next", 0, ""], ["next_n", 1, "n"], ["copy_next", 0, ""],
              ["put_glyph_8bit_obs", 1, "c"], ["put_subs_8bit_obs", 3, "scc"], ["put_copy", 1, "s"], ["insert", 0, ""],
-             ["delete", 0, ""], ["assoc", -1, "v"], ["cntxt_item", 2, "so"], ["attr_set", 1, "S"],
+             ["delete", 0, ""], ["assoc", -1, "v"], ["cntxt_item", 2, "so"], ["attr_set", 1, "S"],                          # 32
              ["attr_add", 1, "S"], ["attr_sub", 1, "S"], ["attr_set_slot", 1, "S"], ["iattr_set_slot", 2, "Sn"],
-             ["push_slot_attr", 2, "Ss"], ["push_glyph_attr_obs", "gs"], ["push_glyph_metric", 3, "msn"], ["push_feat", 2, "fs"],
+             ["push_slot_attr", 2, "Ss"], ["push_glyph_attr_obs", 2, "gs"], ["push_glyph_metric", 3, "msn"], ["push_feat", 2, "fs"],
              ["push_att_to_gattr_obs", 2, "gs"], ["push_att_to_glyph_metric", 3, "msn"], ["push_islot_attr", 3, "Ssn"], ["push_iglyph_attr", 3, "gsn"],
-             ["pop_ret", 0, ""], ["ret_zero", 0, ""], ["ret_true", 0, ""], ["iattr_set", 2, "Sn"],
+             ["pop_ret", 0, ""], ["ret_zero", 0, ""], ["ret_true", 0, ""], ["iattr_set", 2, "Sn"],                          # 48
              ["iattr_add", 2, "Sn"], ["iattr_sub", 2, "Sn"], ["push_proc_state", 1, "n"], ["push_version", 0, ""],
              ["put_subs", 5, "sCcCc"], ["put_subs2", 4, "cscc"], ["put_subs3", 7, "scscscc"], ["put_glyph", 2, "Cc"],
              ["push_glyph_attr", 3, "Ggs"], ["push_att_to_glyph_attr", 3, "Ggs"] );
+
+my ($i) = 0;
+our %opnames = map {$_->[0] => $i++} @opcodes;
 
 =head2 read
 
@@ -347,7 +350,7 @@ sub read
         ($silf->{'maxGlyphID'}, $silf->{'Ascent'}, $silf->{'Descent'},
          $numPasses, $silf->{'substPass'}, $silf->{'posPass'}, $silf->{'justPass'}, $silf->{'bidiPass'},
          $silf->{'Flags'}, $silf->{'maxPreContext'}, $silf->{'maxPostContext'}, $silf->{'attrPseudo'},
-         $silf->{'attrBreakWeight'}, $silf->{'attrDirectionality'}, $d, $d, $numJust) = 
+         $silf->{'attrBreakWeight'}, $silf->{'attrDirectionality'}, $silf->{'attrMirror'}, $silf->{'passBits'}, $numJust) = 
             TTF_Unpack("SssCCCCCCCCCCCCCC", $dat);
         if ($numJust)
         {
@@ -394,23 +397,25 @@ sub read
         $classbase = $fh->tell();
         $fh->read($dat, 4);
         my ($numClasses, $numLinearClasses) = TTF_Unpack("SS", $dat);
+        $silf->{'numLinearClasses'} = $numLinearClasses;
         $fh->read($dat, $numClasses * 2 + 2);
         @classo = unpack("n*", $dat);
         $fh->read($dat, $classo[-1] - $classo[0]);
         for ($i = 0; $i < $numLinearClasses; $i++)
         {
-            my ($c) = 0;
-            push (@{$silf->{'classes'}}, { map {$_ => $c++} 
-                                                unpack("n*", substr($dat, $classo[$i] - $classo[0], 
-                                                            $classo[$i+1] - $classo[$i])) }); 
+            push (@{$silf->{'classes'}}, [unpack("n*", substr($dat, $classo[$i] - $classo[0], 
+                                                            $classo[$i+1] - $classo[$i]))]) 
         }
         for ($i = $numLinearClasses; $i < $numClasses; $i++)
         {
-            push (@{$silf->{'classes'}}, { unpack("n*",
-                substr($dat, $classo[$i] - $classo[0] + 8, $classo[$i+1] - $classo[$i] - 8)) });
+            my (@res);
+            my (@c) = unpack("n*", substr($dat, $classo[$i] - $classo[0] + 8, $classo[$i+1] - $classo[$i] - 8));
+            for (my $j = 0; $j < @c; $j += 2)
+            { $res[$c[$j+1]] = $c[$j]; }
+            push (@{$silf->{'classes'}}, \@res);
         }
         foreach (0 .. $numPasses - 1)
-        { $self->read_pass($fh, $passo[$_], $moff + $silfo[$sili], $silf); }
+        { $self->read_pass($fh, $passo[$_], $moff + $silfo[$sili], $silf, $_); }
     }
     return $self;
 }
@@ -423,7 +428,7 @@ sub chopcode
 
     for ($i = $#{$offsets} - 1; $i >= 0; $i--)
     {
-        if ($offsets->[$i])
+        if ($offsets->[$i] or $i == 0)
         {
             unshift(@{$dest}, substr($dat, $offsets->[$i], $last - $offsets->[$i]));
             $last = $offsets->[$i];
@@ -436,8 +441,8 @@ sub chopcode
 
 sub read_pass
 {
-    my ($self, $fh, $offset, $base, $silf) = @_;
-    my ($pass) = {};
+    my ($self, $fh, $offset, $base, $silf, $id) = @_;
+    my ($pass) = {'id' => $id};
     my ($d, $dat, $i, @orulemap, @oconstraints, @oactions, $numRanges);
 
     $fh->seek($offset + $base, 0);
@@ -492,7 +497,7 @@ sub read_pass
 
 sub chopranges
 {
-    my ($map) = @_;
+    my ($map, $numg) = @_;
     my ($dat, $numRanges);
     my (@keys) = sort {$a <=> $b} keys %{$map};
     my ($first, $last, $col, $g);
@@ -502,23 +507,99 @@ sub chopranges
     $col = -1;
     foreach $g (@keys)
     {
+        next unless ($g > 0 or $g eq '0');
         if ($g != $last + 1 || $map->{$g} != $col)
         {
             if ($col != -1)
             {
-                $dat .= pack("SSS", $first, $last, $col);
+                $dat .= pack("nnn", $first, $last, $col);
                 $numRanges++;
             }
             $first = $last = $g;
             $col = $map->{$g};
         }
+        else
+        { $last++; }
     }
     if ($col != -1)
     {
-        $dat .= pack("SSS", $first, $last, $col);
+        $dat .= pack("nnn", $first, $last, $col);
         $numRanges++;
     }
     return ($numRanges, $dat);
+}
+
+sub unpack_code
+{
+    my ($self, $str) = @_;
+    my (@res, $i, $j);
+    my ($l) = length($str);
+
+    for ($i = 0; $i < $l; )
+    {
+        my ($a) = unpack('C', substr($str, $i, 1));
+        my ($o) = $opcodes[$a];
+        my (@args);
+        my (@types) = split('', $o->[2]);
+        ++$i;
+        for ($j = 0; $j < @types; ++$j)
+        {
+            my ($t) = $types[$j];
+            if ($t eq 'v')
+            {
+                my ($n) = unpack('C', substr($str, $i, 1));
+                push (@args, unpack('C*', substr($str, $i + 1, $n)));
+                $i += $n + 1;
+            }
+            elsif ($t eq 'L' or $t eq 'N' or $t eq 'G' or $t eq 'C')
+            {
+                push (@args, unpack('n', substr($str, $i, 2)));
+                $i += 2;
+                $j++;
+            }
+            else
+            {
+                push (@args, unpack($t eq 's' ? 'c' : 'C', substr($str, $i, 1)));
+                $i++;
+            }
+        }
+        push (@res, [$o->[0], @args]);
+    }
+    return @res;
+}
+
+sub pack_code
+{
+    my ($self, $cmds) = @_;
+    my ($res);
+
+    foreach my $c (@{$cmds})
+    {
+        my ($ind) = $opnames{$c->[0]};
+        my ($i) = 1;
+        $res .= pack('C', $ind);
+        # my (@types) = unpack('C*', $opcodes[$ind][2]);
+        my (@types) = split('', $opcodes[$ind][2]);
+        for (my $j = 0; $j < @types; $j++)
+        {
+            my ($t) = $types[$j];
+            if ($t eq 'v')
+            {
+                my ($n) = scalar @{$c} - 1;
+                $res .= pack('C*', $n, @{$c}[1..$#{$c}]);
+                $i += $n;
+            }
+            elsif ($t eq 'C' or $t eq 'G' or $t eq 'L' or $t eq 'N')
+            {
+                $res .= pack('n', $c->[$i]);
+                $j++;
+            }
+            else
+            { $res .= pack($t eq 's' ? 'c' : 'C', $c->[$i]); }
+            $i++;
+        }
+    }
+    return $res;
 }
 
 sub packcode
@@ -548,19 +629,33 @@ sub out_pass
     my (@offsets, $res, $pbase);
 
     $pbase = $fh->tell();
+#    printf "pass base = %04X, ", $pbase - $subbase;
     $fh->print(TTF_Pack("CCCCSSLLLLSSSS", $pass->{'flags'}, $pass->{'maxRuleLoop'}, $pass->{'maxRuleContext'},
                 $pass->{'maxBackup'}, $pass->{'numRules'}, 24, 0, 0, 0, 0, $pass->{'numRows'},
                 $pass->{'numTransitional'}, $pass->{'numSuccess'}, $pass->{'numColumns'}));
     ($numRanges, $dat) = chopranges($pass->{'colmap'});
-    $fh->print(TTF_Pack("SSSS", TTF_bininfo($numRanges)));
+#    print "numranges = $numRanges\n";
+    $fh->print(TTF_Pack("SSSS", TTF_bininfo($numRanges, 6)));
     $fh->print($dat);
     $dat = "";
     $c = 0;
-    foreach (@{$pass->{'rulemap'}})
+#    print "transitions = $pass->{'numTransitional'}, success = $pass->{'numSuccess'}, rows = $pass->{'numRows'}\n";
+    my ($sucbase) = $pass->{'numRows'} - $pass->{'numSuccess'};
+    foreach (0 .. ($pass->{'numSuccess'} - 1))
     {
         push(@orulemap, $c);
-        $dat .= pack("n*", @{$_});
-        $c += @{$_};
+        if (defined $pass->{'rulemap'}[$_])
+        {
+            $dat .= pack("n*", @{$pass->{'rulemap'}[$_]});
+            $c += @{$pass->{'rulemap'}[$_]};
+        }
+        else
+        {
+            print "No rules for " . ($sucbase + $_);
+            if ($sucbase + $_ < $pass->{'numTransitional'})
+            { print ": (" . join(",", @{$pass->{'fsm'}[$sucbase + $_]}) . ")"; }
+            print "\n";
+        }
     }
     push (@orulemap, $c);
     $fh->print(pack("n*", @orulemap));
@@ -572,10 +667,14 @@ sub out_pass
     $fh->print(TTF_Pack("CS", 0, $pass->{'passConstraintLen'}));
     my ($oconstraints, $dat) = packcode($pass->{'constraintCode'});
     my ($oactions, $actiondat) = packcode($pass->{'actionCode'});
+#    printf "constraint offsets @ %X\n", $fh->tell();
     $fh->print(pack("n*", @{$oconstraints}));
+#    printf "action offsets @ %X\n", $fh->tell();
     $fh->print(pack("n*", @{$oactions}));
+#    printf "fsm @ %X\n", $fh->tell();
     foreach (@{$pass->{'fsm'}})
     { $fh->print(pack("n*", @{$_})); }
+#    printf "end of fsm @ %X\n", $fh->tell();
     $fh->print(pack("C", 0));
     push(@offsets, $fh->tell() - $subbase);
     $fh->print($pass->{'passConstraintCode'});
@@ -586,8 +685,10 @@ sub out_pass
     push(@offsets, 0);
     $res = $fh->tell();
     $fh->seek($pbase + 8, 0);
-    $fh->print(pack("n*", @offsets));
+    $fh->print(pack("N*", @offsets));
     $fh->seek($res, 0);
+#    printf "end = %04X\n", $res - $subbase;
+    return $res;
 }
 
 =head2 out
@@ -599,24 +700,37 @@ Outputs a Silf data structure to a font file in binary format
 sub out
 {
     my ($self, $fh) = @_;
-    my ($silf);
+    my ($silf, $base, $subbase, $silfc, $end);
 
     return $self->SUPER::out($fh) unless ($self->{' read'});
+    $base = $fh->tell();
     if ($self->{'Version'} >= 3)
     { $fh->print(TTF_Pack("vvSS", $self->{'Version'}, $self->{'Compiler'}, $#{$self->{'SILF'}} + 1, 0)); }
     else
     { $fh->print(TTF_Pack("vSS", $self->{'Version'}, $#{$self->{'SILF'}} + 1, 0)); }
+    $fh->print(pack('N*', (0) x (@{$self->{'SILF'}})));
     foreach $silf (@{$self->{'SILF'}})
     {
         my ($subbase) = $fh->tell();
-        my ($numlin, $i, @opasses, $oPasses, $oPseudo, $ooPasses, $end);
+        my ($numlin, $i, @opasses, $oPasses, $oPseudo, $ooPasses);
         if ($self->{'Version'} > 3)
-        { $fh->print(TTF_Pac("vSS", $silf->{'Version'}, $oPasses, $oPseudo)); }
+        {
+            $fh->seek($base + 12 + $silfc * 4, 0);
+            $fh->print(pack('N', $subbase - $base));
+            $fh->seek($subbase, 0);
+            $fh->print(TTF_Pack("vSS", $silf->{'Version'}, $oPasses, $oPseudo));
+        }
+        else
+        {
+            $fh->seek($base + 8 + $silfc * 4, 0);
+            $fh->print(pack('N', $subbase - $base));
+            $fh->seek($subbase, 0);
+        }
         $fh->print(TTF_Pack("SssCCCCCCCCCCCCCC", 
              $silf->{'maxGlyphID'}, $silf->{'Ascent'}, $silf->{'Descent'},
-             $silf->{'numPasses'}, $silf->{'substPass'}, $silf->{'posPass'}, $silf->{'justPass'}, $silf->{'bidiPass'},
+             scalar @{$silf->{'PASS'}}, $silf->{'substPass'}, $silf->{'posPass'}, $silf->{'justPass'}, $silf->{'bidiPass'},
              $silf->{'Flags'}, $silf->{'maxPreContext'}, $silf->{'maxPostContext'}, $silf->{'attrPseudo'},
-             $silf->{'attrBreakWeight'}, $silf->{'attrDirectionality'}, 0, 0, $#{$silf->{'JUST'}} + 1));
+             $silf->{'attrBreakWeight'}, $silf->{'attrDirectionality'}, $silf->{'attrMirror'}, $silf->{'passBits'}, $#{$silf->{'JUST'}} + 1));
         foreach (@{$silf->{'JUST'}})
         { $fh->print(TTF_Pack("CCCCCCCC", $_->{'attrStretch'}, $_->{'attrShrink'}, $_->{'attrStep'},
                         $_->{'attrWeight'}, $_->{'runto'}, 0, 0, 0)); }
@@ -629,31 +743,43 @@ sub out
         { $fh->print(pack("a4", $_)); }
         $fh->print(TTF_Pack("S", $silf->{'lbGID'}));
         $ooPasses = $fh->tell();
-        if ($silf->{'PASS'}) { $fh->print(pack("N*", (0) x @{$silf->{'PASS'}}));}
+        if ($silf->{'PASS'}) { $fh->print(pack("N*", (0) x (@{$silf->{'PASS'}} + 1)));}
         my (@pskeys) = keys %{$silf->{'pseudos'}};
-        $fh->print(TTF_Pack("SSSS", TTF_bininfo(scalar @pskeys)));
+        $fh->print(TTF_Pack("SSSS", TTF_bininfo(scalar @pskeys, 6)));
         $oPseudo = $fh->tell() - $subbase;
         foreach my $k (sort {$a <=> $b} @pskeys)
-        { $fh->print(TTF_Pack("LS", $k, $silf->{'pseudos'}{$k})); }
-        $numlin = -1;
-        foreach (0 .. $#{$silf->{'classes'}})
-        {
-            if (scalar keys %{$silf->{'classes'}[$_]} > 8)  # binary search vs linear search crosses at 8 elements
-            {
-                $numlin = $_;
-                last;
-            }
-        }
-        $numlin = @{$silf->{'classes'}} if ($numlin < 0);
+        { $fh->print(TTF_Pack("Ls", $k, $silf->{'pseudos'}{$k})); }
+        $numlin = $silf->{'numLinearClasses'};
         $fh->print(TTF_Pack("SS", scalar @{$silf->{'classes'}}, $numlin));
+        my (@coffsets);
+        my ($cbase) = (scalar @{$silf->{'classes'}} + 1) * ($self->{'Version'} >= 4 ? 4 : 2) + 4;
         for ($i = 0; $i < $numlin; $i++)
-        { $fh->print(pack("n*", sort {$silf->{'classes'}[$i]{$a} <=> $silf->{'classes'}[$i]{$b}} keys %{$silf->{'classes'}[$i]})); }
+        {
+            push (@coffsets, $cbase);
+            $cbase += 2 * scalar @{$silf->{'classes'}[$i]};
+        }
         for ($i = $numlin; $i < @{$silf->{'classes'}}; $i++)
         {
-            foreach (sort {$a <=> $b} keys %{$silf->{'classes'}[$i]})
-            { $fh->print(TTF_Pack("SS", $_, $silf->{'classes'}[$i]{$_})); }
+            push (@coffsets, $cbase);
+            my ($len) = scalar @{$silf->{'classes'}[$i]};
+            $cbase += 8 + 4 * $len;
+        }
+        push (@coffsets, $cbase);
+        $fh->print(pack(($self->{'Version'} >= 4 ? 'N*' : 'n*'), @coffsets));
+        for ($i = 0; $i < $numlin; $i++)
+        { $fh->print(pack("n*", @{$silf->{'classes'}[$i]})); }
+        for ($i = $numlin; $i < @{$silf->{'classes'}}; $i++)
+        {
+            my ($num) = scalar @{$silf->{'classes'}[$i]};
+            my (@bin) = TTF_bininfo($num, 1);
+            $fh->print(TTF_Pack("SSSS", @bin));
+            my ($j) = 0;
+            my (@dat) = map {[$_, $j++]} @{$silf->{'classes'}[$i]};
+            foreach (sort {$a->[0] <=> $b->[0] || $a->[1] <=> $b->[1]} @dat)
+            { $fh->print(TTF_Pack("SS", $_->[0], $_->[1])); }
         }
         $oPasses = $fh->tell() - $subbase;
+#        printf "original pass = %04X\n", $oPasses;
         push (@opasses, $oPasses);
         foreach (@{$silf->{'PASS'}})
         { push(@opasses, $self->out_pass($fh, $_, $silf, $subbase) - $subbase); }
@@ -666,12 +792,13 @@ sub out
             $fh->print(TTF_Pack("SS", $oPasses, $oPseudo));
         }
         $fh->seek($end, 0);
+        $silfc++;
     }
 }
 
 sub XML_element
 {
-    my ($self, $context, $depth, $k, $val) = @_;
+    my ($self, $context, $depth, $k, $val, $ind) = @_;
     my ($fh) = $context->{'fh'};
     my ($i);
 
@@ -680,39 +807,80 @@ sub XML_element
     if ($k eq 'classes')
     {
         $fh->print("$depth<classes>\n");
-        foreach $i (0 .. @{$val})
+        foreach $i (0 .. $#{$val})
         {
             $fh->printf("$depth    <class num='%d'>\n", $i);
-            foreach (sort {$a <=> $b} keys %{$val->[$i]})
-            { $fh->printf("%s        <glyph id='%d' index='%d'/>\n", $depth, $_, $val->[$i]{$_}); }
-            $fh->print("$depth    </class>\n");
+            $fh->printf("$depth        " . join(" ", map{sprintf("%d", $_)} @{$val->[$i]}));
+            $fh->print("\n$depth    </class>\n");
         }
         $fh->print("$depth</classes>\n");
     }
     elsif ($k eq 'fsm')
     {
         $fh->print("$depth<fsm>\n");
+        my ($i) = 0;
         foreach (@{$val})
-        { $fh->print("$depth    <row>" . join(" ", @{$_}) . "</row>\n"); }
+        { $fh->print("$depth    <row index='$i'>" . join(" ", @{$_}) . "</row>\n"); $i++; }
         $fh->print("$depth</fsm>\n");
     }
     elsif ($k eq 'colmap')
     {
         my ($i);
         $fh->print("$depth<colmap>");
-        while (my ($k, $v) = each %{$val})
+        foreach my $k (sort {$a <=> $b} keys %{$val})
         {
             if ($i++ % 8 == 0)
             { $fh->print("\n$depth  "); }
-            $fh->printf(" %d=%d", $k, $v);
+            $fh->printf(" %d=%d", $k, $val->{$k});
         }
         $fh->print("\n$depth</colmap>\n");
     }
+    elsif ($k eq 'constraintCode' or $k eq 'actionCode')
+    {
+        $fh->print("$depth<$k>\n");
+        foreach my $i (0 .. $#{$val})
+        {
+            my (@rules) = $self->unpack_code($val->[$i]);
+            next unless (@rules);
+            $fh->print("$depth  <elem index='$i' code='" . join(" ", unpack('C*', $val->[$i])) . "'>\n");
+            foreach my $r (@rules)
+            { $fh->print("$depth    $r->[0]: ". join(", ", @{$r}[1..$#{$r}]) . "\n"); }
+            $fh->print("$depth  </elem>\n");
+        }
+        $fh->print("$depth</$k>\n");
+    }       
     else
-    { return $self->SUPER::XML_element($context, $depth, $k, $val); }
+    { return $self->SUPER::XML_element($context, $depth, $k, $val, $ind); }
 
     $self;
 }
 
+=head2 $t->minsize()
+
+Returns the minimum size this table can be. If it is smaller than this, then the table
+must be bad and should be deleted or whatever.
+
+=cut
+
+sub minsize
+{
+    return 4;
+}
+
 1;
 
+=head1 AUTHOR
+
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
+=cut

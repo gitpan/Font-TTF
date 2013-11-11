@@ -1,0 +1,501 @@
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF.pm
+--- a/lib/Font/TTF.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -1,6 +1,7 @@
+ package Font::TTF;
+ 
+-$VERSION = '1.02';    # MJPH    30-Aug-2012      Fix case typo in Useall
++$VERSION = '1.03';    # MJPH     5-Sep-2013      Add $t->minsize()
++# $VERSION = '1.02';    # MJPH    30-Aug-2012      Fix case typo in Useall
+ # $VERSION = '1.01';    # MJPH    30-Aug-2012      add IO::String prerequisite
+ # $VERSION = '1.00';    # MJPH    21-Aug-2012      OS/2, OT & Graphite improvements; bug fixes
+ # $VERSION = '0.48';    # MJPH    15-DEC-2010      Bug fixes
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Cmap.pm
+--- a/lib/Font/TTF/Cmap.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Cmap.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -579,6 +579,20 @@
+     $self;
+ }
+ 
++
++=head2 $t->minsize()
++
++Returns the minimum size this table can be in bytes. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 4;
++}
++
++
+ =head2 $t->update
+ 
+ Tidies the cmap table.
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Feat.pm
+--- a/lib/Font/TTF/Feat.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Feat.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -121,6 +121,20 @@
+     $self;
+ }
+ 
++
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 6;
++}
++
++
+ =head2 $t->print($fh)
+ 
+ Prints a human-readable representation of the table
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/GDEF.pm
+--- a/lib/Font/TTF/GDEF.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/GDEF.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -396,6 +396,19 @@
+ }
+ 
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 10;
++}
++
++
+ =head2 $t->update
+ 
+ Sort COVERAGE tables.
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Glat.pm
+--- a/lib/Font/TTF/Glat.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Glat.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -111,5 +111,17 @@
+     push(@{$gloc->{'locations'}}, $fh->tell() - $base);
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 4;
++}
++
+ 1;
+ 
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Gloc.pm
+--- a/lib/Font/TTF/Gloc.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Gloc.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -83,5 +83,17 @@
+     { $fh->write(pack("n$num", @{$self->{'names'}})); }
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 8;
++}
++
+ 1;
+ 
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/GrFeat.pm
+--- a/lib/Font/TTF/GrFeat.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/GrFeat.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -175,6 +175,18 @@
+ 	$self;
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 6;
++}
++
+ =head2 $t->print($fh)
+ 
+ Prints a human-readable representation of the table
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Hdmx.pm
+--- a/lib/Font/TTF/Hdmx.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Hdmx.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -94,6 +94,18 @@
+     $self;
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 8;
++}
++
+ 
+ =head2 $t->tables_do(&func)
+ 
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Head.pm
+--- a/lib/Font/TTF/Head.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Head.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -117,6 +117,19 @@
+ }
+ 
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 54;
++}
++
++
+ =head2 $t->XML_element($context, $depth, $key, $value)
+ 
+ Handles date process for the XML exporter
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Hhea.pm
+--- a/lib/Font/TTF/Hhea.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Hhea.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -99,6 +99,19 @@
+ }
+ 
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 36;
++}
++
++
+ =head2 $t->update
+ 
+ Updates various parameters in the hhea table from the hmtx table.
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Kern.pm
+--- a/lib/Font/TTF/Kern.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Kern.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -319,6 +319,18 @@
+     $self;
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 4;
++}
++
+ 1;
+ 
+ =head1 BUGS
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/LTSH.pm
+--- a/lib/Font/TTF/LTSH.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/LTSH.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -72,6 +72,18 @@
+     $self;
+ }
+     
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 4;
++}
++
+ 
+ 1;
+ 
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Maxp.pm
+--- a/lib/Font/TTF/Maxp.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Maxp.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -120,6 +120,18 @@
+     $self;
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 4;
++}
++
+ 
+ =head2 $t->update
+ 
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Mort.pm
+--- a/lib/Font/TTF/Mort.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Mort.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -67,6 +67,18 @@
+     }
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 8;
++}
++
+ =head2 $t->print($fh)
+ 
+ Prints a human-readable representation of the table
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Name.pm
+--- a/lib/Font/TTF/Name.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Name.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -291,6 +291,18 @@
+     { return $self->SUPER::XML_end(@_); }
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 6;
++}
++
+ =head2 is_utf8($pid, $eid)
+ 
+ Returns whether a string of a given platform and encoding is going to be in UTF8
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/OS_2.pm
+--- a/lib/Font/TTF/OS_2.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/OS_2.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -236,6 +236,18 @@
+     { return $self->SUPER::XML_end(@_); }
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 78;
++}
++
+ =head2 $t->update
+ 
+ Updates the OS/2 table by getting information from other sources:
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/PCLT.pm
+--- a/lib/Font/TTF/PCLT.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/PCLT.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -106,6 +106,18 @@
+     $fh->print(TTF_Out_Fields($self, \%fields, 54));
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 54;
++}
++
+ 1;
+ 
+ =head1 BUGS
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Post.pm
+--- a/lib/Font/TTF/Post.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Post.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -286,6 +286,18 @@
+     $self;
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 32;
++}
++
+ 1;
+ 
+ =head1 BUGS
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Prop.pm
+--- a/lib/Font/TTF/Prop.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Prop.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -81,6 +81,18 @@
+     AAT_write_lookup($fh, $self->{'format'}, $lookup, 2, $default) if (defined $lookup);
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 8;
++}
++
+ =head2 $t->print($fh)
+ 
+ Prints a human-readable representation of the table
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Silf.pm
+--- a/lib/Font/TTF/Silf.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Silf.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -865,5 +865,17 @@
+     $self;
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 4;
++}
++
+ 1;
+ 
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Sill.pm
+--- a/lib/Font/TTF/Sill.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Sill.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -109,6 +109,19 @@
+     }
+     $self;
+ }
++
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 6;
++}
++
+ 1;
+         
+         
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Table.pm
+--- a/lib/Font/TTF/Table.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Table.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -287,6 +287,18 @@
+ }
+     
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 0;
++}
++
+ =head2 $t->dirty($val)
+ 
+ This sets the dirty flag to the given value or 1 if no given value. It returns the
+diff -r 8809aefde4ba -r 935f6ddb5204 lib/Font/TTF/Vhea.pm
+--- a/lib/Font/TTF/Vhea.pm	Tue Sep 03 09:37:53 2013 +0000
++++ b/lib/Font/TTF/Vhea.pm	Thu Sep 05 14:20:58 2013 +0700
+@@ -98,6 +98,18 @@
+     $self;
+ }
+ 
++=head2 $t->minsize()
++
++Returns the minimum size this table can be. If it is smaller than this, then the table
++must be bad and should be deleted or whatever.
++
++=cut
++
++sub minsize
++{
++    return 36;
++}
++
+ 
+ =head2 $t->update
+ 

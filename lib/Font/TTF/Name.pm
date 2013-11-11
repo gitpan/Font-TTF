@@ -165,10 +165,13 @@ sub out
 {
     my ($self, $fh) = @_;
     my ($pid, $eid, $lid, $nid, $todo, @todo);
-    my ($len, $offset, $loc, $stroff, $endloc, $str_trans);
+    my ($len, $loc, $stroff, $endloc, $str_trans);
+    my (%dedup, @strings, @offsets, $strcount);
 
     return $self->SUPER::out($fh) unless $self->{' read'};
 
+    $strcount = 0;
+    $offsets[0] = 0;
     $loc = $fh->tell();
     $fh->print(pack("n3", 0, 0, 0));
     foreach $nid (0 .. $#{$self->{'strings'}})
@@ -195,25 +198,30 @@ sub out
                         elsif ($pid == 0 || $pid == 3 || ($pid == 2 && $eid == 1))
                         { $str_trans = TTF_utf8_word($str_trans); }
                     }
-                    push (@todo, [$pid, $eid, $lid, $nid, $str_trans]);
+                    my ($str_ind);
+                    unless (defined $dedup{$str_trans})
+                    {
+                        use bytes;
+                        $dedup{$str_trans} = $strcount;
+                        $strings[$strcount] = $str_trans;
+                        $strcount++;
+                        $offsets[$strcount] = $offsets[$strcount-1] + bytes::length($str_trans);
+                    }
+                    $str_ind = $dedup{$str_trans};
+                    push (@todo, [$pid, $eid, $lid, $nid, $str_ind]);
                 }
             }
         }
     }
 
-    $offset = 0;
     @todo = (sort {$a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2]
             || $a->[3] <=> $b->[3]} @todo);
     foreach $todo (@todo)
-    {
-        $len = length($todo->[4]);
-        $fh->print(pack("n6", @{$todo}[0..3], $len, $offset));
-        $offset += $len;
-    }
+    { $fh->print(pack("n6", @{$todo}[0..3], $offsets[$todo->[4]+1] - $offsets[$todo->[4]], $offsets[$todo->[4]])); }
     
     $stroff = $fh->tell() - $loc;
-    foreach $todo (@todo)
-    { $fh->print($todo->[4]); }
+    foreach my $str (@strings)
+    { $fh->print($str); }
 
     $endloc = $fh->tell();
     $fh->seek($loc, 0);
@@ -281,6 +289,18 @@ sub XML_end
     }
     else
     { return $self->SUPER::XML_end(@_); }
+}
+
+=head2 $t->minsize()
+
+Returns the minimum size this table can be. If it is smaller than this, then the table
+must be bad and should be deleted or whatever.
+
+=cut
+
+sub minsize
+{
+    return 6;
 }
 
 =head2 is_utf8($pid, $eid)
@@ -880,8 +900,17 @@ once Perl 5.6 has been released and I can find all the mapping tables, etc.
 
 =head1 AUTHOR
 
-Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
-licensing.
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
 
 =cut
 

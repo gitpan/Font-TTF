@@ -8,6 +8,8 @@ Font::TTF::Prop - Glyph Properties table in a font
 
 =head1 INSTANCE VARIABLES
 
+=over
+
 =item version
 
 =item default
@@ -17,6 +19,8 @@ Font::TTF::Prop - Glyph Properties table in a font
 Hash of property values keyed by glyph number
 
 =item lookupFormat
+
+=back
 
 =head1 METHODS
 
@@ -79,6 +83,18 @@ sub out
     $fh->print(TTF_Pack("vSS", $self->{'version'}, (defined $lookup ? 1 : 0), $default));
 
     AAT_write_lookup($fh, $self->{'format'}, $lookup, 2, $default) if (defined $lookup);
+}
+
+=head2 $t->minsize()
+
+Returns the minimum size this table can be. If it is smaller than this, then the table
+must be bad and should be deleted or whatever.
+
+=cut
+
+sub minsize
+{
+    return 8;
 }
 
 =head2 $t->print($fh)
@@ -147,8 +163,17 @@ None known
 
 =head1 AUTHOR
 
-Jonathan Kew L<Jonathan_Kew@sil.org>. See L<Font::TTF::Font> for copyright and
-licensing.
+Jonathan Kew L<Jonathan_Kew@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
 
 =cut
 

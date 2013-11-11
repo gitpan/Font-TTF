@@ -181,11 +181,11 @@ sub read
                     else
                     { $id = unpack("n", substr($dat, ($j << 1) + $num * 6 +
                                         2 + ($k - $start) * 2 + $range, 2)) + $delta; }
-                            $id -= 65536 if $id >= 65536;
+                    $id -= 65536 if $id >= 65536;
                     $s->{'val'}{$k} = $id if ($id);
                 }
             }
-        } elsif ($form == 8 || $form == 12)
+        } elsif ($form == 8 || $form == 12 || $form == 13)
         {
             $fh->read($dat, 10);
             ($len, $s->{'Ver'}) = unpack('x2N2', $dat);
@@ -203,7 +203,7 @@ sub read
             {
                 ($start, $end, $sg) = unpack("N3", substr($dat, $j * 12, 12));
                 for ($k = $start; $k <= $end; $k++)
-                { $s->{'val'}{$k} = $sg++; }
+                { $s->{'val'}{$k} = $form == 13 ? $sg : $sg++; }
             }
         } elsif ($form == 10)
         {
@@ -253,7 +253,7 @@ sub find_ms
         if ($s->{'Platform'} == 3)
         {
             $self->{' mstable'} = $s;
-            last if ($s->{'Encoding'} == 10);
+            return $s if ($s->{'Encoding'} == 10);
             $found = 1 if ($s->{'Encoding'} == 1);
         } elsif ($s->{'Platform'} == 0 || ($s->{'Platform'} == 2 && $s->{'Encoding'} == 1))
         { $alt = $s; }
@@ -413,31 +413,83 @@ sub out
             $fh->print(pack('n*', @glyphIndexArray));
         } elsif ($s->{'Format'} == 4)
         {
-            my ($num, $sRange, $eSel, $eShift, @starts, @ends, $doff);
-            my (@deltas, $delta, @range, $flat, $k, $segs, $count, $newseg, $v);
+            my (@starts, @ends, @deltas, @range);
 
             push(@keys, 0xFFFF) unless ($keys[-1] == 0xFFFF);
-            $newseg = 1; $num = 0;
-            for ($j = 0; $j <= $#keys && $keys[$j] <= 0xFFFF; $j++)
+            
+            # Step 1: divide into maximal length idDelta runs
+            
+            my ($prevUSV, $prevgid);
+            for ($j = 0; $j <= $#keys; $j++)
             {
-                $v = $s->{'val'}{$keys[$j]} || 0;
-                if ($newseg)
+                my $u = $keys[$j];
+                my $g = $s->{'val'}{$u};
+                if ($j == 0 || $u != $prevUSV+1 || $g != $prevgid+1)
                 {
-                    $delta = $v;
-                    $doff = $j;
-                    $flat = 1;
-                    push(@starts, $keys[$j]);
-                    $newseg = 0;
+                    push @ends, $prevUSV unless $j == 0;
+                    push @starts, $u;
+                    push @range, 0;
                 }
-                $delta = 0 if ($delta + $j - $doff != $v);
-                $flat = 0 if ($v == 0);
-                if ($j == $#keys || $keys[$j] + 1 != $keys[$j+1])
+                $prevUSV = $u;
+                $prevgid = $g;
+            }
+            push @ends, $prevUSV;
+            
+            # Step 2: find each macro-range
+            
+            my ($start, $end);  # Start and end of macro-range
+            for ($start = 0; $start < $#starts; $start++)
+            {
+                next if $ends[$start] - $starts[$start]  >  7;      # if count > 8, we always treat this as a run unto itself
+                for ($end = $start+1; $end <= $#starts; $end++)
                 {
-                    push (@ends, $keys[$j]);
-                    push (@deltas, $delta ? $delta - $keys[$doff] : 0);
-                    push (@range, $flat);
-                    $num++;
-                    $newseg = 1;
+                    last if $starts[$end] - $ends[$end-1] > 4 || $ends[$end] - $starts[$end] > 7;   # gap > 4 or count > 8 so $end is beyond end of macro-range
+                }
+                $end--; #Ending index of this macro-range
+                
+                # Step 3: optimize this macro-range (from $start through $end)
+                L1: for ($j = $start; $j < $end; )
+                {
+                    my $size1 = ($range[$j] ? 8 + 2 * ($ends[$j] - $starts[$j] + 1) : 8); # size of first range (which may now be idRange type)
+                    for (my $k = $j+1; $k <= $end; $k++)
+                    {
+                        if (8 + 2 * ($ends[$k] - $starts[$j] + 1) <= $size1 + 8 * ($k - $j))
+                        {
+                            # Need to coalesce $j..$k into $j:
+                            $ends[$j] = $ends[$k];
+                            $range[$j] = 1;         # for now use boolean to indicate this is an idRange segment
+                            splice @starts, $j+1, $k-$j;
+                            splice @ends,   $j+1, $k-$j;
+                            splice @range,  $j+1, $k-$j;
+                            $end -= ($k-$j);
+                            next L1;    # Note that $j isn't incremented so this is a redo
+                        }
+                    }
+                    # Nothing coalesced
+                    $j++;
+                }
+                
+                # Finished with this macro-range
+                $start = $end;
+            }
+            
+            # What is left is a collection of segments that will represent the cmap in mimimum-sized format 4 subtable
+            
+            my ($num, $count, $sRange, $eSel, $eShift);
+
+            $num = scalar(@starts);
+            $count = 0;
+            for ($j = 0; $j < $num; $j++)
+            {
+                if ($range[$j])
+                {
+                    $range[$j] = ($count + $num - $j) << 1;
+                    $count += $ends[$j] - $starts[$j] + 1;
+                    push @deltas, 0;
+                }
+                else
+                {
+                    push @deltas, ($s->{'val'}{$starts[$j]} || 0) - $starts[$j];
                 }
             }
 
@@ -447,20 +499,6 @@ sub out
             $fh->print(pack("n", 0));
             $fh->print(pack("n*", @starts));
             $fh->print(pack("n*", @deltas));
-
-            $count = 0;
-            for ($j = 0; $j < $num; $j++)
-            {
-                $delta = $deltas[$j];
-                if ($delta != 0 && $range[$j] == 1)
-                { $range[$j] = 0; }
-                else
-                {
-                    $range[$j] = ($count + $num - $j) << 1;
-                    $count += $ends[$j] - $starts[$j] + 1;
-                }
-            }
-
             $fh->print(pack("n*", @range));
 
             for ($j = 0; $j < $num; $j++)
@@ -468,7 +506,7 @@ sub out
                 next if ($range[$j] == 0);
                 $fh->print(pack("n*", map {$_ || 0} @{$s->{'val'}}{$starts[$j] .. $ends[$j]}));
             }
-        } elsif ($s->{'Format'} == 8 || $s->{'Format'} == 12)
+        } elsif ($s->{'Format'} == 8 || $s->{'Format'} == 12 || $s->{'Format'} == 13)
         {
             my (@jobs, $start, $current, $curr_glyf, $map);
             
@@ -476,21 +514,21 @@ sub out
             $map = "\000" x 8192;
             foreach $j (@keys)
             {
-                if ($j > 0xFFFF)
+                if ($j > 0xFFFF && $s->{'Format'} == 8)
                 {
                     if (defined $s->{'val'}{$j >> 16})
                     { $s->{'Format'} = 12; }
                     vec($map, $j >> 16, 1) = 1;
                 }
-                if ($j != $current + 1 || $s->{'val'}{$j} != $curr_glyf + 1)
+                if ($j != $current + 1 || $s->{'val'}{$j} != ($s->{'Format'} == 13 ? $curr_glyf : $curr_glyf + 1))
                 {
-                    push (@jobs, [$start, $current, $curr_glyf - ($current - $start)]) if (defined $start);
+                    push (@jobs, [$start, $current, $s->{'Format'} == 13 ? $curr_glyf : $curr_glyf - ($current - $start)]) if (defined $start);
                     $start = $j; $current = $j; $curr_glyf = $s->{'val'}{$j};
                 }
                 $current = $j;
                 $curr_glyf = $s->{'val'}{$j};
             }
-            push (@jobs, [$start, $current, $curr_glyf - ($current - $start)]) if (defined $start);
+            push (@jobs, [$start, $current, $s->{'Format'} == 13 ? $curr_glyf : $curr_glyf - ($current - $start)]) if (defined $start);
             $fh->print($map) if ($s->{'Format'} == 8);
             $fh->print(pack('N', $#jobs + 1));
             foreach $j (@jobs)
@@ -541,6 +579,20 @@ sub XML_element
     $self;
 }
 
+
+=head2 $t->minsize()
+
+Returns the minimum size this table can be in bytes. If it is smaller than this, then the table
+must be bad and should be deleted or whatever.
+
+=cut
+
+sub minsize
+{
+    return 4;
+}
+
+
 =head2 $t->update
 
 Tidies the cmap table.
@@ -561,28 +613,28 @@ sub update
 
     foreach my $s (@{$self->{'Tables'}})
     {
-    	$max = 0;
-    	while (($code, $gid) = each %{$s->{'val'}})
-    	{
-    		if ($gid)
-    		{
-    			# remember max USV
-    			$max = $code if $max < $code;
-    		}
-    		else
-    		{
-    			# Remove unneeded key
-    			delete $s->{'val'}{$code};  # nb: this is a safe delete according to perldoc perlfunc.
-    		}
-    	}
-    	push @keep, $s unless $s->{'Platform'} == 3 && $s->{'Encoding'} == 10 && $s->{'Format'} == 12 && $max <= 0xFFFF;
+        $max = 0;
+        while (($code, $gid) = each %{$s->{'val'}})
+        {
+            if ($gid)
+            {
+                # remember max USV
+                $max = $code if $max < $code;
+            }
+            else
+            {
+                # Remove unneeded key
+                delete $s->{'val'}{$code};  # nb: this is a safe delete according to perldoc perlfunc.
+            }
+        }
+        push @keep, $s unless $s->{'Platform'} == 3 && $s->{'Encoding'} == 10 && $s->{'Format'} == 12 && $max <= 0xFFFF;
     }
     
-    $self->{'Tables'} = [ @keep ];	
+    $self->{'Tables'} = [ @keep ];  
     
-    delete $self->{' mstable'};		# Force rediscovery of this.
-	
-	$self;
+    delete $self->{' mstable'};     # Force rediscovery of this.
+    
+    $self;
 }
 
 =head2 @map = $t->reverse(%opt)
@@ -644,14 +696,23 @@ sub is_unicode
 
 =item *
 
-No support for format 2 tables (MBCS)
+Format 14 (Unicode Variation Sequences) cmaps are not supported.
 
 =back
 
 =head1 AUTHOR
 
-Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
-licensing.
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
 
 =cut
 

@@ -12,6 +12,8 @@ say that a coverage table is a class definition in which the class definition
 for each glyph is the corresponding index in the coverage table. The resulting
 data structure is that a Coverage table has the following fields:
 
+=over 
+
 =item cover
 
 A boolean to indicate whether this table is a coverage table (TRUE) or a
@@ -30,6 +32,12 @@ is written out.
 
 A count of the elements in a coverage table for use with add. Each subsequent
 addition is added with the current count and increments the count.
+
+=item max
+
+Maximum class value in a class table.
+
+=back
 
 =head1 METHODS
 
@@ -52,15 +60,16 @@ sub new
     my ($self) = {};
 
     $self->{'cover'} = $isCover;
-    $self->{'count'} = 0;
     if ($isCover)
     {
+        $self->{'count'} = 0;
         my ($v);
         foreach $v (@_)
         { $self->{'val'}{$v} = $self->{'count'}++; }
     }
     else
     {
+        $self->{'max'} = 0;
         $self->{'val'} = {@_};
         foreach (values %{$self->{'val'}}) {$self->{'max'} = $_ if $_ > $self->{'max'}}
     }
@@ -89,6 +98,7 @@ sub read
         {
             $fh->read($dat, $num << 1);
             map {$self->{'val'}{$_} = $i++} unpack("n*", $dat);
+            $self->{'count'} = $num;
         } elsif ($fmt == 2)
         {
             $fh->read($dat, $num * 6);
@@ -97,8 +107,8 @@ sub read
                 ($first, $last, $c) = unpack("n3", substr($dat, $i * 6, 6));
                 map {$self->{'val'}{$_} = $c++} ($first .. $last);
             }
+            $self->{'count'} = $c;
         }
-        $self->{'count'} = $num;
     } elsif ($fmt == 1)
     {
         $fh->read($dat, 2);
@@ -134,8 +144,10 @@ sub out
     my ($shipout) = ($state ? sub {$out .= $_[0];} : sub {$fh->print($_[0]);});
     my (@gids) = sort {$a <=> $b} keys %{$self->{'val'}};
 
-    if ($self->{'cover'} and !$self->{'dontsort'} and !$dontsort)
-    { $self->sort(); }
+    if ($self->{'cover'})
+    { $self->sort() unless ($self->{'dontsort'} or $dontsort); }
+    else
+    { @gids = grep {$self->{'val'}{$_} > 0} @gids;}		# class value=0 is not explicitly coded in class table
 
     $fmt = 1; $grp = 1; $eff = 0;
     for ($i = 1; $i <= $#gids; $i++)
@@ -153,7 +165,7 @@ sub out
         }
     }
 #    if ($self->{'cover'})
-    { $fmt = 2 if ($eff / $grp > 3); }
+    { $fmt = 2 if ($eff / $grp > 3 || scalar (@gids) == 0); }
 #    else
 #    { $fmt = 2 if ($grp > 1); }
     
@@ -197,9 +209,12 @@ sub out
             $end++;
             $num++;
         }
-        &$shipout(pack("n3", $gids[$start], $gids[$end],
-                $self->{'val'}{$gids[$start]}));
-        $num++;
+        if (scalar(@gids))
+        {
+	        &$shipout(pack("n3", $gids[$start], $gids[$end],
+	                $self->{'val'}{$gids[$start]}));
+	        $num++;
+	    }
         if ($state)
         { substr($out, 2, 2) = pack('n', $num); }
         else
@@ -216,8 +231,8 @@ sub out
 
 =head2 $c->add($glyphid[, $class])
 
-Adds a glyph id to the coverage table incrementing the count so that each subsequent addition
-has the next sequential number. Returns the index number of the glyphid added
+Adds a glyph id to the coverage or class table. 
+Returns the index or class number of the glyphid added.
 
 =cut
 
@@ -270,7 +285,7 @@ if (0)
     { vec($vec, $_, $size) = $self->{'val'}{$_} > $range ? $range : $self->{'val'}{$_}; }
     length($vec) . ":" . $vec;
 }
-    $vec = join(";", map{"$_,$self->{'val'}{$_}"} keys %{$self->{'val'}});
+    $vec = join(";", map{"$_,$self->{'val'}{$_}"} sort { $a <=> $b} keys %{$self->{'val'}});
 }
 
 =head2 @map=$c->sort
@@ -316,13 +331,21 @@ sub out_xml
 sub release
 { }
 
+1;
 
 =head1 AUTHOR
 
-Martin Hosken Martin_Hosken@sil.org. See L<Font::TTF::Font> for copyright and
-licensing.
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
 
 =cut
-
-1;
 

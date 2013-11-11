@@ -6,7 +6,7 @@ Font::TTF::Dumper - Debug dump of a font datastructure, avoiding recursion on ' 
 
 =head1 SYNOPSIS
 
-    Font::TTF::Dumper;
+    use Font::TTF::Dumper;
     
     # Print a table from the font structure:
     print ttfdump($font->{$tag});
@@ -72,8 +72,20 @@ sub myfilter
 
 1;
 
-=head1 See also
 
-L<Font::TTF::Font>
+=head1 AUTHOR
+
+Bob Hallissy L<Bob_Hallissy@sil.org>
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
 
 =cut
+

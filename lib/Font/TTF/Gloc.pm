@@ -39,7 +39,7 @@ sub read
 {
     my ($self) = @_;
     my ($fh) = $self->{' INFILE'};
-    my ($numGlyphs) = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
+    my ($numGlyphs);
     my ($dat, $flags);
 
     $self->SUPER::read or return $self;
@@ -47,6 +47,8 @@ sub read
     ($self->{'Version'}) = TTF_Unpack("v", $dat);
     $fh->read($dat, 4);
     ($flags, $self->{'numAttrib'}) = TTF_Unpack("SS", $dat);
+    $numGlyphs = ($self->{' LENGTH'} - 8 - ($flags & 2 ? $self->{'numAttrib'} * 2 : 0)) / (($flags & 1) ? 4 : 2) - 1;
+    $self->{'numGlyphs'} = $numGlyphs;
     if ($flags & 1)
     {
         $fh->read($dat, 4 * ($numGlyphs + 1));
@@ -68,19 +70,48 @@ sub read
 sub out
 {
     my ($self, $fh) = @_;
-    my ($numGlyphs) = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
+    my ($numGlyphs) = 0;
     my ($flags, $num);
 
     return $self->SUPER::out($fh) unless ($self->{' read'});
+    $numGlyphs = scalar @{$self->{' PARENT'}{'Glat'}{'attribs'}};
     $num = $self->{'numAttrib'};
     $flags = 1 if ($self->{'locations'}[-1] > 0xFFFF);
     $flags |= 2 if ($self->{'names'});
     $fh->print(TTF_Pack("vSS", $self->{'Version'}, $flags, $num));
-    if ($flags & 1)
-    { $fh->write(pack(($flags & 1 ? "N" : "n") . $numGlyphs, @{$self->{'locations'}})); }
+    $fh->write(pack(($flags & 1 ? "N" : "n") . ($numGlyphs + 1), @{$self->{'locations'}}));
     if ($flags & 2)
     { $fh->write(pack("n$num", @{$self->{'names'}})); }
 }
 
+=back 
+
+=head2 $t->minsize()
+
+Returns the minimum size this table can be. If it is smaller than this, then the table
+must be bad and should be deleted or whatever.
+
+=cut
+
+sub minsize
+{
+    return 8;
+}
+
 1;
 
+=head1 AUTHOR
+
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
+=cut

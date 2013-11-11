@@ -1,3 +1,18 @@
+=head1 NAME
+
+Font::TTF::Useall - shortcut to 'use' all the Font::TTF modules
+
+=head1 SYNOPSIS
+
+    use Font::TTF::Useall;
+
+=head1 DESCRIPTION
+
+Useful for debugging, this module simply does a 'use' on all the other
+modules that are part of Font::TTF.
+
+=cut
+
 use Font::TTF::Ttc;
 use Font::TTF::PSNames;
 use Font::TTF::OTTags;
@@ -67,4 +82,21 @@ use Font::TTF::Glat;
 use Font::TTF::Gloc;
 use Font::TTF::Dumper;
 
+
 1;
+
+=head1 AUTHOR
+
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
+
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
+=cut

@@ -1,5 +1,3 @@
-Perl Module Font::TTF is Copyright (c) 1998-2012, Martin Hosken (SIL International)
-
 =head1 INTRODUCTION
 
 Perl module for TrueType/OpenType font hacking. Supports reading, processing and
@@ -81,6 +79,8 @@ Or using the install feature in tools like WinZip.
 
 =head1 CHANGES
 
+See Changes for an overview of recent changes. 
+
 =head2 Future Changes
 
 I do not anticipate any more restructuring changes (but reserve the right to do so).
@@ -88,16 +88,16 @@ I do not anticipate any more restructuring changes (but reserve the right to do 
 =head1 AUTHOR
 
 Martin Hosken L<Martin_Hosken@sil.org>
-
-Copyright (c) 1998-2012, Martin Hosken (SIL International)
 (see CONTRIBUTORS for other authors).
 
-No warranty or expression of effectiveness for anything, least of all anyone's
-safety, is implied in this software or documentation.
+=head1 LICENSING
 
-=head1 LICENSE INFORMATION
+Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
 
-This module is free software; you can redistribute it and/or modify it under the terms of the
-Artistic License 2.0. For details, see the full text of the license in the file LICENSE.
+This module is released under the terms of the Artistic License 2.0. 
+For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the Open Font License v1.1, see OFL.txt.
+The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
+=cut
+
