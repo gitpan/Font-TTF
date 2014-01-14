@@ -74,7 +74,7 @@ sub out
     
     $fh->print(TTF_Pack("v", $self->{'version'}));
     
-    $descs = $self->{'descriptors'} or {};
+    $descs = $self->{'descriptors'} || {};
     
     $fh->print(pack("N", scalar keys %$descs));    
     foreach (sort keys %$descs) {
@@ -132,7 +132,7 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut
 

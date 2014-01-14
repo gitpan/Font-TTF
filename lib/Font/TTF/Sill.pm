@@ -69,7 +69,7 @@ sub out
 
     return $self->SUPER::out($fh) unless ($self->{' read'});
     $fh->print(TTF_Pack("vSSSS", $self->{'version'}, $num, $range, $select, $shift));
-    foreach $k (sort (keys %{$self->{'langs'}}), '+1')
+    foreach $k ((sort keys %{$self->{'langs'}}), '+1')
     {
         my ($numf) = scalar @{$self->{'langs'}{$k}} unless ($k eq '+1');
         $fh->print(pack("a4nn", $k, $numf, $offset));
@@ -137,7 +137,7 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut
 

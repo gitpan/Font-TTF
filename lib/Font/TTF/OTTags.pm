@@ -18,16 +18,22 @@ Font::TTF::OTTags - Utilities for TrueType/OpenType tags
   	
   # Read latest tags file to add to built-in definitions
   readtagsfile ("C:\\Program Files\\Microsoft VOLT\\TAGS.txt");
-  
+
 First-level keys to %tttags and %ttnames are:
 
 =over
 
-'SCRIPT' -- retrieve script tag or name
+=item SCRIPT
 
-'LANGUAGE' -- retrieve language tag or name
+retrieve script tag or name
 
-'FEATURE' -- retrieve feature tag or name
+=item LANGUAGE 
+
+retrieve language tag or name
+
+=item FEATURE 
+
+retrieve feature tag or name
 
 =back
 
@@ -1216,6 +1222,6 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut

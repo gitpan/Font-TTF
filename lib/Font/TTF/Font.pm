@@ -438,7 +438,7 @@ sub read
             ($name, $check, $off, $len) = unpack("a4NNN", $dat);
             $zlen = $len;
         }
-        $self->{$name} = $self->{' PARENT'}->find($self, $name, $check, $off, $len) && next
+        $self->{$name} = $self->{' PARENT'}->find($self, $name, $check, $off, $len) and next
                 if (defined $self->{' PARENT'});
         $type = $tables{$name} || 'Font::TTF::Table';
         $t = $type;
@@ -916,7 +916,7 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut
 

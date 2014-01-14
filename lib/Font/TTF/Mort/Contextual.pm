@@ -12,10 +12,9 @@ use strict;
 use vars qw(@ISA);
 use Font::TTF::Utils;
 use Font::TTF::AATutils;
-use Font::TTF::Mort::Subtable;
 use IO::File;
 
-@ISA = qw(Font::TTF::AAT::Mort::Subtable);
+@ISA = qw(Font::TTF::Mort::Subtable);
 
 sub new
 {
@@ -160,7 +159,7 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut
 

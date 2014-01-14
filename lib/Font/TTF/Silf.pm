@@ -665,8 +665,9 @@ sub out_pass
     $fh->print(pack("n*", @{$pass->{'ruleSortKeys'}}));
     $fh->print(pack("C*", @{$pass->{'rulePreContexts'}}));
     $fh->print(TTF_Pack("CS", 0, $pass->{'passConstraintLen'}));
-    my ($oconstraints, $dat) = packcode($pass->{'constraintCode'});
-    my ($oactions, $actiondat) = packcode($pass->{'actionCode'});
+    my ($oconstraints, $oactions);
+    ($oconstraints, $dat) = packcode($pass->{'constraintCode'});
+    ($oactions, $actiondat) = packcode($pass->{'actionCode'});
 #    printf "constraint offsets @ %X\n", $fh->tell();
     $fh->print(pack("n*", @{$oconstraints}));
 #    printf "action offsets @ %X\n", $fh->tell();
@@ -881,6 +882,6 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut

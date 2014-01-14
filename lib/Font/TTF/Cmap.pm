@@ -15,7 +15,7 @@ Note that C<$code> should be a true value (0x1234) rather than a string represen
 
 =head1 INSTANCE VARIABLES
 
-The instance variables listed here are not preceeded by a space due to their
+The instance variables listed here are not preceded by a space due to their
 emulating structural information in the font.
 
 =over 4
@@ -31,7 +31,7 @@ An array of subtables ([0..Num-1])
 =back
 
 Each subtables also has its own instance variables which are, again, not
-preceeded by a space.
+preceded by a space.
 
 =over 4
 
@@ -240,6 +240,7 @@ Finds the a Unicode table, giving preference to the Microsoft one, and sets the 
 to it if found. Returns the table it finds.
 
 =cut
+
 sub find_ms
 {
     my ($self) = @_;
@@ -327,11 +328,11 @@ sub out
             
         if ($s->{'Format'} == 0)
         {
-            $fh->print(pack("C256", @{$s->{'val'}}{0 .. 255}));
+            $fh->print(pack("C256", map {defined $_ ? $_ : 0} @{$s->{'val'}}{0 .. 255}));
         } elsif ($s->{'Format'} == 6)
         {
             $fh->print(pack("n2", $keys[0], $keys[-1] - $keys[0] + 1));
-            $fh->print(pack("n*", @{$s->{'val'}}{$keys[0] .. $keys[-1]}));
+            $fh->print(pack("n*", map {defined $_ ? $_ : 0} @{$s->{'val'}}{$keys[0] .. $keys[-1]}));
         } elsif ($s->{'Format'} == 2)       # Contributed by Huw Rogers
         {
             my ($g, $k, $h, $l, $m, $n);
@@ -712,7 +713,7 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut
 

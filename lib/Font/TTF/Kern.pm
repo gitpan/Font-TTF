@@ -33,13 +33,13 @@ Number of subtables in the kerning table
 
 =item tables
 
-Array of subtables in the kerning table
-
-=over 
-
-=item kern
+Array of subtables in the kerning table 
 
 Each subtable has a number of instance variables.
+
+=over 4
+
+=item kern
 
 A two level hash array containing kerning values. The indexing is left
 is via left class and right class. It may seem using hashes is strange,
@@ -358,7 +358,7 @@ Copyright (c) 1998-2013, SIL International (http://www.sil.org)
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
 
-The test suite contains test fonts released under the SIL Open Font License 1.1, see OFL.txt.
+
 
 =cut
 
