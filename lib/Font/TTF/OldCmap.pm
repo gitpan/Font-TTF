@@ -158,7 +158,7 @@ sub read
                     else
                     { $id = unpack("n", substr($dat, ($j << 1) + $num * 6 +
                                         2 + ($k - $start) * 2 + $range, 2)) + $delta; }
-		            $id -= 65536 if $id > 65536;
+                    $id -= 65536 if $id > 65536;
                     push (@ids, $id);
                 }
                 $s->{'val'}->fastadd_segment($start, 0, @ids);
@@ -269,7 +269,7 @@ sub out
             for ($j = 0; $j < $num; $j++)
             {
                 $delta = $segs->[$j]{'VAL'}[0]; $flat = 1;
-                for ($k = $k < $segs->[$j]{'LEN'}; $k++)
+                for ($k = 1; $k < $segs->[$j]{'LEN'}; $k++)
                 {
                     if ($segs->[$j]{'VAL'}[$k] == 0)
                     { $flat = 0; }
@@ -353,12 +353,12 @@ No support for format 2 tables (MBCS)
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

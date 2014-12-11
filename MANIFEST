@@ -84,6 +84,7 @@ LICENSE
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
+MYMETA.json
 MYMETA.yml
 README.TXT
 t/OFL.txt
@@ -92,4 +93,5 @@ t/testfont.ttf
 t/testfont.woff
 t/ttfcopy.t
 TODO
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

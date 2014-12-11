@@ -497,30 +497,30 @@ Useful for creating @cover parameter to set_name().
 
 sub pe_list
 {
-	my ($self) = @_;
-	my (@cover, %ids);
+    my ($self) = @_;
+    my (@cover, %ids);
 
-	foreach my $nid (0 .. $#{$self->{'strings'}})
-	{
-		if (defined $self->{'strings'}[$nid])
-		{
-    		foreach my $pid (0 .. $#{$self->{'strings'}[$nid]})
-    		{
-    			if (defined $self->{'strings'}[$nid][$pid])
-    			{
-    				foreach my $eid (0 .. $#{$self->{'strings'}[$nid][$pid]})
-	    			{
-	    				if (defined $self->{'strings'}[$nid][$pid][$eid] && !$ids{$pid}{$eid})
-	    				{
-	    					$ids{$pid}{$eid} = 1;
-	    					push @cover, [$pid, $eid];
-	    				}
-	    			}
-	    		}
-    		}
-    	}
+    foreach my $nid (0 .. $#{$self->{'strings'}})
+    {
+        if (defined $self->{'strings'}[$nid])
+        {
+            foreach my $pid (0 .. $#{$self->{'strings'}[$nid]})
+            {
+                if (defined $self->{'strings'}[$nid][$pid])
+                {
+                    foreach my $eid (0 .. $#{$self->{'strings'}[$nid][$pid]})
+                    {
+                        if (defined $self->{'strings'}[$nid][$pid][$eid] && !$ids{$pid}{$eid})
+                        {
+                            $ids{$pid}{$eid} = 1;
+                            push @cover, [$pid, $eid];
+                        }
+                    }
+                }
+            }
+        }
     }
-	return @cover;
+    return @cover;
 }
 
 
@@ -900,12 +900,12 @@ once Perl 5.6 has been released and I can find all the mapping tables, etc.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

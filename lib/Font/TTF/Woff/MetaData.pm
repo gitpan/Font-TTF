@@ -8,12 +8,6 @@ Font::TTF::Woff::MetaData - WOFF metadata
 
 Currently a stub, thus read() results in read_dat()
 
-=head1 INSTANCE VARIABLES
-
-=over 4
-
-=back
-
 =cut
 
 use Font::TTF::Utils;
@@ -25,16 +19,13 @@ require Font::TTF::Table;
 
 =head1 AUTHOR
 
-Bob Hallissy. L<Bob_Hallissy@sil.org>
-
+Bob Hallissy. L<http://scripts.sil.org/FontUtils>.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
-
-
 
 =cut

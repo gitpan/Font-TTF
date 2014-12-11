@@ -28,9 +28,7 @@ Number of subtables in this table
 
 An array of subtables ([0..Num-1])
 
-=back
-
-Each subtables also has its own instance variables which are, again, not
+Each subtable also has its own instance variables which are, again, not
 preceded by a space.
 
 =over 4
@@ -57,6 +55,21 @@ A hash keyed by the codepoint value (not a string) storing the glyph id
 
 =back
 
+=back
+
+The following cmap options are controlled by instance variables that start with a space:
+
+=over 4
+
+=item allowholes
+
+By default, when generating format 4 cmap subtables character codes that point to glyph zero
+(normally called .notdef) are not included in the subtable. In some cases including some of these
+character codes can result in a smaller format 4 subtable. To enable this behavior, set allowholes 
+to non-zero. 
+
+=back
+
 =head1 METHODS
 
 =cut
@@ -78,7 +91,7 @@ fill in the segmented array accordingly.
 
 sub read
 {
-    my ($self) = @_;
+    my ($self, $keepzeros) = @_;
     $self->SUPER::read or return $self;
 
     my ($dat, $i, $j, $k, $id, @ids, $s);
@@ -182,7 +195,7 @@ sub read
                     { $id = unpack("n", substr($dat, ($j << 1) + $num * 6 +
                                         2 + ($k - $start) * 2 + $range, 2)) + $delta; }
                     $id -= 65536 if $id >= 65536;
-                    $s->{'val'}{$k} = $id if ($id);
+                    $s->{'val'}{$k} = $id if ($id || $keepzeros);
                 }
             }
         } elsif ($form == 8 || $form == 12 || $form == 13)
@@ -416,7 +429,14 @@ sub out
         {
             my (@starts, @ends, @deltas, @range);
 
-            push(@keys, 0xFFFF) unless ($keys[-1] == 0xFFFF);
+            # There appears to be a bug in Windows that requires the final 0xFFFF (sentry)
+            # to be in a segment by itself -- otherwise Windows 7 and 8 (at least) won't install
+            # or preview the font, complaining that it doesn't appear to be a valid font.
+            # Therefore we can't just add 0XFFFF to the USV list as we used to do:
+            # push(@keys, 0xFFFF) unless ($keys[-1] == 0xFFFF);
+            # Instead, for now *remove* 0xFFFF from the USV list, and add a segement
+            # for it after all the other segments are computed.
+            pop @keys if $keys[-1] == 0xFFFF;
             
             # Step 1: divide into maximal length idDelta runs
             
@@ -444,7 +464,8 @@ sub out
                 next if $ends[$start] - $starts[$start]  >  7;      # if count > 8, we always treat this as a run unto itself
                 for ($end = $start+1; $end <= $#starts; $end++)
                 {
-                    last if $starts[$end] - $ends[$end-1] > 4 || $ends[$end] - $starts[$end] > 7;   # gap > 4 or count > 8 so $end is beyond end of macro-range
+                    last if $starts[$end] - $ends[$end-1] > ($self->{' allowholes'} ? 5 : 1) 
+                        || $ends[$end] - $starts[$end] > 7;   # gap > 4 or count > 8 so $end is beyond end of macro-range
                 }
                 $end--; #Ending index of this macro-range
                 
@@ -473,6 +494,12 @@ sub out
                 # Finished with this macro-range
                 $start = $end;
             }
+
+            # Ok, add the final segment containing the sentry value
+            push(@keys, 0xFFFF);
+            push @starts, 0xFFFF;
+            push @ends, 0xFFFF;
+            push @range, 0;
             
             # What is left is a collection of segments that will represent the cmap in mimimum-sized format 4 subtable
             
@@ -703,12 +730,12 @@ Format 14 (Unicode Variation Sequences) cmaps are not supported.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

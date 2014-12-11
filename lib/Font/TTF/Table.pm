@@ -68,7 +68,7 @@ use IO::String;
 $VERSION = 0.0001;
 
 my $havezlib = eval {require Compress::Zlib};
-	
+
 =head2 Font::TTF::Table->new(%parms)
 
 Creates a new table or subclass. Table instance variables are passed in
@@ -88,13 +88,17 @@ sub new
     bless $self, $class;
 }
 
-
 =head2 $t->read
 
 Reads the table from the input file. Acts as a superclass to all true tables.
 This method marks the table as read and then just sets the input file pointer
 but does not read any data. If the table has already been read, then returns
 C<undef> else returns C<$self>
+
+For WOFF-compressed tables, the table is first decompressed and a
+replacement file handle is created for reading the decompressed data. In this
+case ORIGINALOFFSET will preserve the original value of OFFSET for 
+applications that care.
 
 =cut
 
@@ -107,12 +111,13 @@ sub read
     $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
     if (0 < $self->{' ZLENGTH'} && $self->{' ZLENGTH'} < $self->{' LENGTH'})
     {
-    	# WOFF table is compressed. Uncompress it to memory and create new fh
-    	die ("Cannot uncompress WOFF data: Compress::Zlib not present.\n") unless $havezlib;
-    	my $dat;
-    	$self->{' INFILE'}->read($dat, $self->{' ZLENGTH'}); 
-    	$dat = Compress::Zlib::uncompress($dat);
-    	warn "$self->{' NAME'} table decompressed to wrong length" if $self->{' LENGTH'} != bytes::length($dat);
+        # WOFF table is compressed. Uncompress it to memory and create new fh
+        die ("Cannot uncompress WOFF data: Compress::Zlib not present.\n") unless $havezlib;
+        $self->{' ORIGINALOFFSET'} = $self->{' OFFSET'};    # Preserve this for those who care
+        my $dat;
+        $self->{' INFILE'}->read($dat, $self->{' ZLENGTH'}); 
+        $dat = Compress::Zlib::uncompress($dat);
+        warn "$self->{' NAME'} table decompressed to wrong length" if $self->{' LENGTH'} != bytes::length($dat);
         $self->{' INFILE'} = IO::String->new($dat);
         binmode $self->{' INFILE'};
         $self->{' OFFSET'} = 0;
@@ -140,18 +145,18 @@ sub read_dat
     $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
     if (0 < $self->{' ZLENGTH'} && $self->{' ZLENGTH'} < $self->{' LENGTH'})
     {
-    	# WOFF table is compressed. Uncompress it directly to ' dat'
-    	die ("Cannot uncompress WOFF data: Compress::Zlib not present.\n") unless $havezlib;
-    	my $dat;
-    	$self->{' INFILE'}->read($dat, $self->{' ZLENGTH'}); 
-    	$dat = Compress::Zlib::uncompress($dat);
-    	warn "$self->{' NAME'} table decompressed to wrong length" if $self->{' LENGTH'} != bytes::length($dat);
-    	$self->{' dat'} = $dat;
- 	}
- 	else
- 	{
-	    $self->{' INFILE'}->read($self->{' dat'}, $self->{' LENGTH'});
-	}
+        # WOFF table is compressed. Uncompress it directly to ' dat'
+        die ("Cannot uncompress WOFF data: Compress::Zlib not present.\n") unless $havezlib;
+        my $dat;
+        $self->{' INFILE'}->read($dat, $self->{' ZLENGTH'}); 
+        $dat = Compress::Zlib::uncompress($dat);
+        warn "$self->{' NAME'} table decompressed to wrong length" if $self->{' LENGTH'} != bytes::length($dat);
+        $self->{' dat'} = $dat;
+    }
+    else
+    {
+        $self->{' INFILE'}->read($self->{' dat'}, $self->{' LENGTH'});
+    }
     $self;
 }
 
@@ -175,6 +180,20 @@ sub out
     }
 
     return undef unless defined $self->{' INFILE'};
+    
+    if (0 < $self->{' ZLENGTH'} && $self->{' ZLENGTH'} < $self->{' LENGTH'})
+    {
+        # WOFF table is compressed. Have to uncompress first
+        $self->read_dat;
+        $fh->print($self->{' dat'});
+        return $self;
+    }
+
+    # We don't really have to keep the following code... we could have 
+    # just always done a full read_dat() on the table. But the following
+    # is more memory-friendly so I've kept it for the more common case 
+    # of non-compressed tables.
+
     $self->{' INFILE'}->seek($self->{' OFFSET'}, 0);
     $len = $self->{' LENGTH'};
     while ($len > 0)
@@ -428,12 +447,12 @@ No known bugs
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

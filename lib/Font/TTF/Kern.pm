@@ -160,9 +160,9 @@ sub read_subtable
     $t->{'type'} = $cov >> 8;
     if ($t->{'Version'} == 0)
     {
-    	# NB: Cambria is an example of a font that plays an unsual trick: The
-    	# kern table is much larger than can be represented by the header $len
-    	# would allow. So we use the number of pairs to figure out how much to read. 
+        # NB: Cambria is an example of a font that plays an unsual trick: The
+        # kern table is much larger than can be represented by the header $len
+        # would allow. So we use the number of pairs to figure out how much to read. 
         $fh->read($dat, 8);
         $t->{'Num'} = unpack("n", $dat);
         $fh->read($dat, $t->{'Num'} * 6);
@@ -348,12 +348,12 @@ No real support functions to I<do> anything with the kerning tables yet.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

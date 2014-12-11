@@ -62,7 +62,7 @@ To help with using the system, each module (or table) will not only describe the
 methods it supports, which are relatively few, but also the instance variables
 it supports, which are many. Most of the variables directly reflect table
 attributes as specified in the OpenType specification, available from Microsoft
-(L<http::/www.microsoft.com/typography>), Adobe and Apple. A list of the names
+(L<http://www.microsoft.com/typography>), Adobe and Apple. A list of the names
 used is also given in each module, but not necessarily with any further
 description. After all, this code is not a TrueType manual as well!
 
@@ -174,7 +174,6 @@ and C<Font> at the top:
  name--
 
  post--
- 
 There is an important universal dependency which it is up to the user to
 keep up to date. This is C<maxp/numOfGlyphs> which is used to iterate over all
 the glyphs. Note that the glyphs themselves are not held in the C<glyph> table
@@ -206,14 +205,14 @@ information we need (and there is lots more that you could add) then we simply
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>
+Martin Hosken L<http://scripts.sil.org/FontUtils>.
 (see CONTRIBUTORS for other authors).
 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

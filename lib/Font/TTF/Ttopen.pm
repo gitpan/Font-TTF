@@ -177,8 +177,9 @@ match.
 
 =item RULES
 
-The rules are a complex array. Each element of the array corresponds to an
-element in the coverage table (governed by the coverage index). If there is
+The rules are a complex array. In most cases, each element of the array 
+corresponds to an element in the coverage table (governed by the coverage index). 
+In a few caess, such as when there is
 no coverage table, then there is considered to be only one element in the rules
 array. Each element of the array is itself an array corresponding to the
 possibly multiple string matches which may follow the initial glyph. Each
@@ -240,8 +241,6 @@ This is the offset to the class definition for the before match glyphs
 
 This is the offset to the class definition for the after match glyphs.
 
-=back
-
 =item ACTION_TYPE
 
 This string holds the type of information held in the ACTION variable of a RULE.
@@ -267,6 +266,8 @@ Note that the documentation is particularly
 unhelpful here in that such tables are given as offsets relative to the
 beginning of the subtable not the whole GSUB table. This includes those items which
 are stored relative to another base within the subtable.
+
+=back
 
 =back
 
@@ -411,7 +412,7 @@ sub read
         }
         foreach $lTag (@{$l->{$tag}{'LANG_TAGS'}}, 'DEFAULT')
         {
-        	# Make copies of referenced languages for each reference. 
+            # Make copies of referenced languages for each reference. 
             next unless $l->{$tag}{$lTag}{' REFTAG'};
             $temp = $l->{$tag}{$lTag}{' REFTAG'};
             $l->{$tag}{$lTag} = &copy($l->{$tag}{$temp});
@@ -1328,12 +1329,12 @@ repeated if necessary. Within lookup sharing is possible.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

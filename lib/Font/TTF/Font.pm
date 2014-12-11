@@ -791,6 +791,7 @@ order as per the order in the directory:
 
 May optionally take a list of table names in which case func is called
 for each of them in the given order.
+
 =cut
 
 sub tables_do
@@ -873,10 +874,14 @@ somewhat spurious results for this table type.
 
 Only type 0 & type 2 tables are supported (type 1 & type 3 yet to come).
 
-=item TTC
+=item TTC and WOFF
 
 The current Font::TTF::Font::out method does not support the writing of TrueType
-Collections.
+Collections or WOFF files.
+
+=item DSIG
+
+Haven't figured out how to correctly calculate and output digital signature (DSIG) table
 
 =back
 
@@ -906,12 +911,12 @@ For more details see the appropriate class files.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>
+Martin Hosken L<http://scripts.sil.org/FontUtils>.
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

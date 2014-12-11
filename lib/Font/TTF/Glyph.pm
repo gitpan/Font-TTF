@@ -16,13 +16,27 @@ In addition to the named variables in a glyph header (C<xMin> etc.), there are
 also all capital instance variables for holding working information, mostly
 from the location table.
 
+=head2 Variables for all glyphs:
+
 The standard attributes each glyph has are:
 
- numberOfContours
- xMin
- yMin
- xMax
- yMax
+=over 4
+
+=item numberOfContours
+
+For simple glyphs this will be the count of contours. For compound glyphs this will be -1.
+
+=item xMin
+
+=item yMin
+
+=item xMax
+
+=item yMax
+
+These identify the bounding box of the glyph.
+
+=back
 
 There are also other, derived, instance variables for each glyph which are read
 when the whole glyph is read (via C<read_dat>):
@@ -40,11 +54,7 @@ The string containing the hinting code for the glyph
 
 =back
 
-In addition there are other attribute like instance variables for simple glyphs:
-
-=over 4
-
-For each contour there is:
+=head2 Variables for simple glyphs (numberOfContours E<gt>= 0):
 
 =over 4
 
@@ -54,9 +64,13 @@ An array of endpoints for each contour in the glyph. There are
 C<numberOfContours> contours in a glyph. The number of points in a glyph is
 equal to the highest endpoint of a contour.
 
+=item numPoints
+
+This is a generated value which contains the total number of points for this simple glyph.
+
 =back
 
-There are also a number of arrays indexed by point number
+There are also a number of arrays indexed by point number:
 
 =over 4
 
@@ -77,9 +91,7 @@ The absolute y co-ordinate of the point
 
 =back
 
-=back
-
-For composite glyphs there are other variables
+=head2 Variables for compound glyphs (numberOfContours == -1):
 
 =over 4
 
@@ -128,7 +140,7 @@ compound glyph.
 
 =back
 
-The private instance variables are:
+=head2 Private instance variables:
 
 =over 4
 
@@ -545,26 +557,26 @@ sub update
             }
             if ($i > 0 && $rflags[-1] == $flag && $repeat < 255)
             {
-            	$repeat++;
+                $repeat++;
             } else
             {
-            	if ($repeat)
-            	{
-            		$rflags[-1] |= 8;
-            		push @rflags, $repeat;
-            	}
-            	push @rflags, $flag;
-            	$repeat = 0;
+                if ($repeat)
+                {
+                    $rflags[-1] |= 8;
+                    push @rflags, $repeat;
+                }
+                push @rflags, $flag;
+                $repeat = 0;
             } 
             $self->{'flags'}[$i] = $flag;
         }
-		# Add final repeat if needed, then pack up the flag bytes:
-    	if ($repeat)
-    	{
-    		$rflags[-1] |= 8;
-    		push @rflags, $repeat;
-    	}
-        $self->{' DAT'} .= pack("C*", @rflags);	
+        # Add final repeat if needed, then pack up the flag bytes:
+        if ($repeat)
+        {
+            $rflags[-1] |= 8;
+            push @rflags, $repeat;
+        }
+        $self->{' DAT'} .= pack("C*", @rflags); 
         for ($i = 0; $i < $self->{'numPoints'}; $i++)
         {
             $flag = $self->{'flags'}[$i];
@@ -874,12 +886,12 @@ C<update> doesn't re-calculate the bounding box or C<numberOfContours>.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.

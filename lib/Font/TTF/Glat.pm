@@ -1,6 +1,6 @@
 package Font::TTF::Glat;
 
-=head1 TITLE
+=head1 NAME
 
 Font::TTF::Glat - Hold glyph attributes
 
@@ -30,13 +30,14 @@ use vars qw(@ISA);
 sub read
 {
     my ($self) = @_;
+    $self->SUPER::read or return $self;
+
     my ($gloc) = $self->{' PARENT'}{'Gloc'};
     my ($fh) = $self->{' INFILE'};
     my ($numGlyphs);
     my ($base) = $self->{' OFFSET'};
     my ($dat, $i);
 
-    $self->SUPER::read or return $self;
     $gloc->read;
     $numGlyphs = $gloc->{'numGlyphs'};
     $fh->seek($base, 0);
@@ -130,12 +131,12 @@ sub minsize
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>. 
+Martin Hosken L<http://scripts.sil.org/FontUtils>. 
 
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org) 
+Copyright (c) 1998-2014, SIL International (http://www.sil.org) 
 
 This module is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
